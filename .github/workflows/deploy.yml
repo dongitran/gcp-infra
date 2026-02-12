@@ -6,7 +6,6 @@ on:
 
 env:
   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-  GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
   PULUMI_CONFIG_PASSPHRASE: ""
 
 jobs:
@@ -20,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Install dependencies
         run: npm install
