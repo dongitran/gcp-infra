@@ -3,6 +3,8 @@ name: Deploy GKE Infrastructure
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '*.md'
 
 env:
   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
