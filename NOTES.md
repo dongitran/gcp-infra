@@ -87,3 +87,26 @@ Lần chạy đầu bị lỗi 2 vấn đề:
 **b) Pulumi org expired trial:**
 - Org `dongitran-org` đang expired trial/canceled subscription
 - Cần vào https://app.pulumi.com/dongitran-org/ để chuyển về free plan hoặc transfer stack sang personal account
+
+**c) Pulumi.dev.yaml chứa placeholder:**
+- `YOUR_GCP_PROJECT_ID` chưa được thay bằng project ID thật
+- Fix: hardcode `fair-backbone-479312-h7` vào file
+
+## 7. Chuyển GCP Project ID sang GitHub Variable
+
+Mục tiêu: config GCP project ID ở 1 chỗ duy nhất (GitHub), không hardcode trong repo.
+
+Các bước:
+1. Tạo GitHub Variable `GCP_PROJECT_ID` (dùng `gh variable set`, hiển thị được, không bị mask)
+2. Sửa `index.ts` — đọc project từ env var `GCP_PROJECT_ID`, fallback sang Pulumi config
+3. Sửa `Pulumi.dev.yaml` — bỏ hardcode project ID, chỉ giữ region/zone
+4. Sửa `deploy.yml` — truyền `GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}` vào env
+5. Xóa GitHub Secret `GCP_PROJECT_ID` (đã chuyển sang variable)
+
+```bash
+# Tạo variable
+gh variable set GCP_PROJECT_ID --body "fair-backbone-479312-h7"
+
+# Xóa secret cũ (đã chuyển sang variable)
+gh secret delete GCP_PROJECT_ID
+```

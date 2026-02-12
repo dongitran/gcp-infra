@@ -3,7 +3,7 @@ import * as gcp from "@pulumi/gcp";
 import * as k8s from "@pulumi/kubernetes";
 
 const config = new pulumi.Config();
-const project = config.require("gcp-project");
+const project = process.env.GCP_PROJECT_ID || config.require("gcp-project");
 const region = config.get("gcp-region") || "asia-southeast1";
 const zone = config.get("gcp-zone") || "asia-southeast1-a";
 const clusterName = config.get("cluster-name") || "gcp-infra";
