@@ -1,5 +1,5 @@
 config:
-  gcp-infra:gcp-project: YOUR_GCP_PROJECT_ID
-  gcp:project: YOUR_GCP_PROJECT_ID
+  gcp-infra:gcp-project: fair-backbone-479312-h7
+  gcp:project: fair-backbone-479312-h7
   gcp:region: asia-southeast1
   gcp:zone: asia-southeast1-a
