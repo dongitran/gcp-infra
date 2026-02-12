@@ -1,0 +1,5 @@
+config:
+  gcp-infra:gcp-project: YOUR_GCP_PROJECT_ID
+  gcp:project: YOUR_GCP_PROJECT_ID
+  gcp:region: asia-southeast1
+  gcp:zone: asia-southeast1-a
