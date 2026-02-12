@@ -15,12 +15,16 @@ This is a Pulumi Infrastructure as Code (IaC) project that provisions a Google K
 
 ```
 gcp-infra/
+├── .github/workflows/
+│   └── deploy.yml      # CI/CD — auto pulumi up on push to main
 ├── index.ts            # Main infrastructure definition (all GCP resources)
 ├── Pulumi.yaml         # Pulumi project configuration
-├── Pulumi.dev.yaml     # Dev stack config (GCP project, region, zone)
+├── Pulumi.dev.yaml     # Dev stack config (region, zone)
 ├── package.json        # Node.js dependencies
 ├── tsconfig.json       # TypeScript compiler options
+├── NOTES.md            # Setup steps & troubleshooting notes
 ├── agents.md           # This file - AI context
+├── .gitignore          # Ignore node_modules, secrets, state
 └── README.md           # Project documentation
 ```
 
@@ -28,28 +32,42 @@ gcp-infra/
 
 1. **VPC Network** (`gcp-infra-network`) - Custom VPC with no auto-subnets
 2. **Subnet** (`gcp-infra-subnet`) - Primary CIDR `10.0.0.0/24` with secondary ranges for pods and services
-3. **GKE Cluster** (`gcp-infra-cluster`) - Zonal cluster with Workload Identity, STABLE release channel
+3. **GKE Cluster** (`gcp-infra-cluster`) - Zonal cluster with Workload Identity, STABLE release channel, default node pool removed
 4. **Node Pool** (`gcp-infra-nodes`) - 2x `e2-medium` nodes, 50GB `pd-standard` disk, auto-repair/upgrade enabled
 5. **Kubernetes Provider** (`gke-k8s`) - For managing K8s resources via Pulumi
 
 ## Key Configuration
 
-Config values are read from Pulumi stack config (`Pulumi.dev.yaml`):
+GCP Project ID: đọc từ env var `GCP_PROJECT_ID` trước, fallback sang Pulumi config `gcp-project`.
 
-| Key | Required | Default |
-|-----|----------|---------|
-| `gcp-project` | Yes | - |
-| `gcp-region` | No | `asia-southeast1` |
-| `gcp-zone` | No | `asia-southeast1-a` |
-| `cluster-name` | No | `gcp-infra` |
+| Key | Source | Default |
+|-----|--------|---------|
+| `GCP_PROJECT_ID` | Env var (CI: GitHub Variable) | — |
+| `gcp-project` | Pulumi config (fallback) | — |
+| `gcp-region` | Pulumi config | `asia-southeast1` |
+| `gcp-zone` | Pulumi config | `asia-southeast1-a` |
+| `cluster-name` | Pulumi config | `gcp-infra` |
+
+## CI/CD
+
+- GitHub Actions workflow: `.github/workflows/deploy.yml`
+- Trigger: push to `main`
+- Auth: `google-github-actions/auth@v2` với Service Account key
+- Deploy: `pulumi/actions@v6` với `upsert: true`
+- State: Pulumi Cloud (`dongitran-org/gcp-infra/dev`)
+
+GitHub Secrets/Variables:
+| Name | Type | Mô tả |
+|------|------|-------|
+| `PULUMI_ACCESS_TOKEN` | Secret | Pulumi Cloud token |
+| `GCP_CREDENTIALS` | Secret | Service Account JSON key |
+| `GCP_PROJECT_ID` | Variable | GCP project ID |
 
 ## Common Commands
 
 ```bash
 npm install              # Install dependencies
 pulumi login             # Login to Pulumi backend
-pulumi stack init dev    # Initialize dev stack
-pulumi config set gcp-infra:gcp-project <PROJECT_ID>  # Set GCP project
 pulumi preview           # Preview changes
 pulumi up                # Deploy infrastructure
 pulumi destroy           # Tear down infrastructure

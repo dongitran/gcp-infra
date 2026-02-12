@@ -110,3 +110,11 @@ gh variable set GCP_PROJECT_ID --body "fair-backbone-479312-h7"
 # Xóa secret cũ (đã chuyển sang variable)
 gh secret delete GCP_PROJECT_ID
 ```
+
+## 8. Fix IPv4 quota — xóa default node pool
+
+CI chạy bị lỗi node pool tạo không được do hết quota external IPv4 (4/4).
+
+Nguyên nhân: GKE bắt buộc `initialNodeCount: 1` → tạo 1 default node pool node (dùng 1 IP). Cộng thêm custom node pool 2 node = cần 3 IP chỉ riêng `gcp-infra`.
+
+Fix: thêm `removeDefaultNodePool: true` vào cluster config. GKE tạo default pool rồi tự xóa ngay, chỉ giữ custom node pool 2 node.

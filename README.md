@@ -29,8 +29,8 @@ pulumi login
 # 3️⃣ Init stack
 pulumi stack init dev
 
-# 4️⃣ Set GCP project
-pulumi config set gcp-infra:gcp-project YOUR_GCP_PROJECT_ID
+# 4️⃣ Set GCP project (or export GCP_PROJECT_ID env var)
+export GCP_PROJECT_ID="your-gcp-project-id"
 
 # 5️⃣ Preview changes
 pulumi preview
@@ -41,23 +41,36 @@ pulumi up
 
 ## ⚙️ Configuration
 
-| Key | Required | Default |
-|-----|----------|---------|
-| `gcp-project` | ✅ | — |
-| `gcp-region` | ❌ | `asia-southeast1` |
-| `gcp-zone` | ❌ | `asia-southeast1-a` |
-| `cluster-name` | ❌ | `gcp-infra` |
+| Key | Source | Default |
+|-----|--------|---------|
+| `GCP_PROJECT_ID` | Env var / GitHub Variable | — |
+| `gcp-region` | Pulumi config | `asia-southeast1` |
+| `gcp-zone` | Pulumi config | `asia-southeast1-a` |
+| `cluster-name` | Pulumi config | `gcp-infra` |
+
+## 🔄 CI/CD
+
+Push to `main` triggers GitHub Actions workflow that runs `pulumi up` automatically.
+
+Requires GitHub Secrets/Variables:
+- 🔑 `PULUMI_ACCESS_TOKEN` (Secret)
+- 🔑 `GCP_CREDENTIALS` (Secret) — Service Account JSON key
+- 📋 `GCP_PROJECT_ID` (Variable)
 
 ## 📁 Project Structure
 
 ```
 gcp-infra/
+├── .github/workflows/
+│   └── deploy.yml      # 🚀 CI/CD — auto deploy on push to main
 ├── index.ts            # 🏗️ Main infrastructure definition
 ├── Pulumi.yaml         # 📋 Pulumi project config
 ├── Pulumi.dev.yaml     # 🔧 Dev environment config
 ├── package.json        # 📦 Dependencies
 ├── tsconfig.json       # ⚙️ TypeScript config
+├── NOTES.md            # 📝 Setup steps & troubleshooting
 ├── agents.md           # 🤖 AI agent context
+├── .gitignore          # 🙈 Ignore rules
 └── README.md           # 📖 This file
 ```
 
