@@ -34,6 +34,7 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     subnetwork: subnet.id,
 
     initialNodeCount: 1,
+    removeDefaultNodePool: true,
 
     ipAllocationPolicy: {
         clusterSecondaryRangeName: "pods",
