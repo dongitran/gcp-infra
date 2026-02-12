@@ -35,5 +35,5 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: up
-          stack-name: dev
+          stack-name: dongitran/gcp-infra/dev
           upsert: true
