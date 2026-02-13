@@ -43,18 +43,54 @@ jobs:
           stack-name: dongitran/gcp-infra/dev
           upsert: true
 
+      - name: Get deploy info
+        if: success()
+        id: info
+        run: |
+          gcloud container clusters get-credentials gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID
+          echo "ingress_ip=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo 'pending')" >> $GITHUB_OUTPUT
+          echo "cluster_ep=$(gcloud container clusters describe gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID --format='value(endpoint)' 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
+
       - name: Notify Telegram (success)
         if: success()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
+          MSG=$(echo "$COMMIT_MSG" | head -1)
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d parse_mode=Markdown \
-            -d text="✅ *GCP Infra deployed*%0A📦 Commit: \`${GITHUB_SHA::7}\`%0A👤 By: ${{ github.actor }}%0A🔗 [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg chat "${{ secrets.TELEGRAM_CHAT_ID }}" \
+              --arg sha "${GITHUB_SHA::7}" \
+              --arg msg "$MSG" \
+              --arg actor "${{ github.actor }}" \
+              --arg ingress "${{ steps.info.outputs.ingress_ip }}" \
+              --arg cluster "${{ steps.info.outputs.cluster_ep }}" \
+              --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              '{
+                chat_id: $chat,
+                parse_mode: "Markdown",
+                disable_web_page_preview: true,
+                text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🔗 [View run](\($url))"
+              }')"
 
       - name: Notify Telegram (failure)
         if: failure()
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
+          MSG=$(echo "$COMMIT_MSG" | head -1)
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d parse_mode=Markdown \
-            -d text="❌ *GCP Infra deploy failed*%0A📦 Commit: \`${GITHUB_SHA::7}\`%0A👤 By: ${{ github.actor }}%0A🔗 [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg chat "${{ secrets.TELEGRAM_CHAT_ID }}" \
+              --arg sha "${GITHUB_SHA::7}" \
+              --arg msg "$MSG" \
+              --arg actor "${{ github.actor }}" \
+              --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              '{
+                chat_id: $chat,
+                parse_mode: "Markdown",
+                disable_web_page_preview: true,
+                text: "❌ *GCP Infra deploy failed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🔗 [View run](\($url))"
+              }')"
