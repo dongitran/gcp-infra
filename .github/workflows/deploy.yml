@@ -48,7 +48,13 @@ jobs:
         id: info
         run: |
           gcloud container clusters get-credentials gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID
-          echo "ingress_ip=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo 'pending')" >> $GITHUB_OUTPUT
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then break; fi
+            echo "Waiting for ingress IP... ($i/30)"
+            sleep 10
+          done
+          echo "ingress_ip=${IP:-pending}" >> $GITHUB_OUTPUT
           echo "cluster_ep=$(gcloud container clusters describe gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID --format='value(endpoint)' 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
 
       - name: Notify Telegram (success)
