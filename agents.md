@@ -63,6 +63,8 @@ GitHub Secrets/Variables:
 | `PULUMI_ACCESS_TOKEN` | Secret | Pulumi Cloud token |
 | `GCP_CREDENTIALS` | Secret | Service Account JSON key |
 | `GCP_PROJECT_ID` | Variable | GCP project ID |
+| `TELEGRAM_BOT_TOKEN` | Secret | Telegram bot token for deploy notifications |
+| `TELEGRAM_CHAT_ID` | Secret | Telegram chat ID for deploy notifications |
 
 ## Common Commands
 

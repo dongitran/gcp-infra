@@ -140,3 +140,15 @@ Lấy external IP:
 ```bash
 kubectl get svc -n ingress-nginx ingress-nginx-controller
 ```
+
+## 11. Telegram notification cho CI
+
+Thêm bước gửi notification qua Telegram bot khi deploy thành công hoặc thất bại.
+
+GitHub Secrets thêm:
+```bash
+gh secret set TELEGRAM_BOT_TOKEN --body "bot-token-here"
+gh secret set TELEGRAM_CHAT_ID --body "chat-id-here"
+```
+
+Workflow dùng `curl` gọi Telegram Bot API `sendMessage` với Markdown format.
