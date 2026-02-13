@@ -13,7 +13,7 @@ export PULUMI_ACCESS_TOKEN="pul-xxx..."
 pulumi login --cloud-url https://api.pulumi.com
 ```
 
-Stack dashboard: https://app.pulumi.com/dongitran-org/gcp-infra/dev
+Stack dashboard: https://app.pulumi.com/dongitran/gcp-infra/dev
 
 ## 2. Init Stack
 
@@ -23,7 +23,7 @@ export PULUMI_CONFIG_PASSPHRASE=""
 pulumi stack init dev
 ```
 
-Stack name đầy đủ trên Pulumi Cloud: `dongitran-org/gcp-infra/dev`
+Stack name đầy đủ trên Pulumi Cloud: `dongitran/gcp-infra/dev`
 
 ## 3. GCP Service Account cho CI
 

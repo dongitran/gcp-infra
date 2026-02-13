@@ -19,7 +19,6 @@ gcp-infra/
 │   └── deploy.yml      # CI/CD — auto pulumi up on push to main
 ├── index.ts            # Main infrastructure definition (all GCP resources)
 ├── Pulumi.yaml         # Pulumi project configuration
-├── Pulumi.dev.yaml     # Dev stack config (region, zone)
 ├── package.json        # Node.js dependencies
 ├── tsconfig.json       # TypeScript compiler options
 ├── NOTES.md            # Setup steps & troubleshooting notes

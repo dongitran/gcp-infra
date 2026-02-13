@@ -57,6 +57,8 @@ Requires GitHub Secrets/Variables:
 - 🔑 `PULUMI_ACCESS_TOKEN` (Secret)
 - 🔑 `GCP_CREDENTIALS` (Secret) — Service Account JSON key
 - 📋 `GCP_PROJECT_ID` (Variable)
+- 🔔 `TELEGRAM_BOT_TOKEN` (Secret) — Deploy notification bot
+- 🔔 `TELEGRAM_CHAT_ID` (Secret) — Deploy notification chat
 
 ## 📁 Project Structure
 
@@ -66,7 +68,6 @@ gcp-infra/
 │   └── deploy.yml      # 🚀 CI/CD — auto deploy on push to main
 ├── index.ts            # 🏗️ Main infrastructure definition
 ├── Pulumi.yaml         # 📋 Pulumi project config
-├── Pulumi.dev.yaml     # 🔧 Dev environment config
 ├── package.json        # 📦 Dependencies
 ├── tsconfig.json       # ⚙️ TypeScript config
 ├── NOTES.md            # 📝 Setup steps & troubleshooting
@@ -78,6 +79,7 @@ gcp-infra/
 ## 📤 Stack Exports
 
 - `clusterEndpoint` — GKE API server endpoint
+- `clusterCaCertificate` — Cluster CA certificate
 - `kubeconfigOutput` — Full kubeconfig for `kubectl`
 - `clusterNameOutput` — Cluster name
 - `networkName` — VPC network name
