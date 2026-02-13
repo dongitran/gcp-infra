@@ -48,10 +48,10 @@ jobs:
         id: info
         run: |
           gcloud container clusters get-credentials gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID
-          for i in $(seq 1 30); do
-            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+          for i in $(seq 1 90); do
+            IP=$(kubectl get svc -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             if [ -n "$IP" ]; then break; fi
-            echo "Waiting for ingress IP... ($i/30)"
+            echo "Waiting for ingress IP... ($i/90)"
             sleep 10
           done
           echo "ingress_ip=${IP:-pending}" >> $GITHUB_OUTPUT
