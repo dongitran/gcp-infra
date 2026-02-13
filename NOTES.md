@@ -118,3 +118,25 @@ CI chạy bị lỗi node pool tạo không được do hết quota external IPv
 Nguyên nhân: GKE bắt buộc `initialNodeCount: 1` → tạo 1 default node pool node (dùng 1 IP). Cộng thêm custom node pool 2 node = cần 3 IP chỉ riêng `gcp-infra`.
 
 Fix: thêm `removeDefaultNodePool: true` vào cluster config. GKE tạo default pool rồi tự xóa ngay, chỉ giữ custom node pool 2 node.
+
+## 9. Chuyển Pulumi stack sang personal account
+
+Org `dongitran-org` expired trial → chuyển stack sang personal account `dongitran`.
+
+- Sửa `deploy.yml`: `stack-name: dongitran/gcp-infra/dev`
+- Xóa stack cũ `dongitran-org/gcp-infra/dev`
+- Xóa hết resources trên GCP (cluster, subnet, VPC) rồi tạo lại từ đầu
+
+## 10. Thêm NGINX Ingress Controller
+
+Deploy NGINX Ingress Controller vào cluster qua Helm chart để expose services ra ngoài.
+
+- Helm chart: `ingress-nginx/ingress-nginx` v4.12.0
+- Namespace: `ingress-nginx`
+- Service type: `LoadBalancer` (GCP tự tạo external IP)
+- 1 replica, resource limits: 250m CPU / 256Mi RAM
+
+Lấy external IP:
+```bash
+kubectl get svc -n ingress-nginx ingress-nginx-controller
+```

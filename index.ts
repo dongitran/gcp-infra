@@ -120,6 +120,32 @@ const k8sProvider = new k8s.Provider("gke-k8s", {
     kubeconfig,
 });
 
+// NGINX Ingress Controller
+const ingressNs = new k8s.core.v1.Namespace("ingress-nginx", {
+    metadata: { name: "ingress-nginx" },
+}, { provider: k8sProvider, dependsOn: [nodePool] });
+
+const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
+    chart: "ingress-nginx",
+    version: "4.12.0",
+    namespace: ingressNs.metadata.name,
+    repositoryOpts: {
+        repo: "https://kubernetes.github.io/ingress-nginx",
+    },
+    values: {
+        controller: {
+            replicaCount: 1,
+            service: {
+                type: "LoadBalancer",
+            },
+            resources: {
+                requests: { cpu: "100m", memory: "128Mi" },
+                limits: { cpu: "250m", memory: "256Mi" },
+            },
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [nodePool] });
+
 // Exports
 export const clusterEndpoint = cluster.endpoint;
 export const clusterCaCertificate = cluster.masterAuth.apply(
@@ -128,3 +154,4 @@ export const clusterCaCertificate = cluster.masterAuth.apply(
 export const kubeconfigOutput = kubeconfig;
 export const clusterNameOutput = cluster.name;
 export const networkName = network.name;
+export const ingressNginxStatus = nginxIngress.status;

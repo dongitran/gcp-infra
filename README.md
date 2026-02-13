@@ -16,6 +16,7 @@
 | 🧩 **Subnet** | `10.0.0.0/24` + secondary ranges for pods & services |
 | ☸️ **GKE Cluster** | Zonal, STABLE channel, Workload Identity |
 | 🖥️ **Node Pool** | 2x `e2-medium`, 50GB disk, auto-repair & auto-upgrade |
+| 🌐 **NGINX Ingress** | Helm chart, LoadBalancer service for external traffic |
 
 ## 🚀 Getting Started
 
@@ -80,6 +81,7 @@ gcp-infra/
 - `kubeconfigOutput` — Full kubeconfig for `kubectl`
 - `clusterNameOutput` — Cluster name
 - `networkName` — VPC network name
+- `ingressNginxStatus` — NGINX Ingress Controller status
 
 ## 🗑️ Tear Down
 

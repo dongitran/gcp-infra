@@ -35,6 +35,7 @@ gcp-infra/
 3. **GKE Cluster** (`gcp-infra-cluster`) - Zonal cluster with Workload Identity, STABLE release channel, default node pool removed
 4. **Node Pool** (`gcp-infra-nodes`) - 2x `e2-medium` nodes, 50GB `pd-standard` disk, auto-repair/upgrade enabled
 5. **Kubernetes Provider** (`gke-k8s`) - For managing K8s resources via Pulumi
+6. **NGINX Ingress Controller** (`ingress-nginx`) - Helm chart v4.12.0, 1 replica, LoadBalancer service for external traffic
 
 ## Key Configuration
 
@@ -54,7 +55,7 @@ GCP Project ID: đọc từ env var `GCP_PROJECT_ID` trước, fallback sang Pul
 - Trigger: push to `main`
 - Auth: `google-github-actions/auth@v2` với Service Account key
 - Deploy: `pulumi/actions@v6` với `upsert: true`
-- State: Pulumi Cloud (`dongitran-org/gcp-infra/dev`)
+- State: Pulumi Cloud (`dongitran/gcp-infra/dev`)
 
 GitHub Secrets/Variables:
 | Name | Type | Mô tả |
@@ -82,3 +83,4 @@ The stack exports these values for use by other stacks or scripts:
 - `kubeconfigOutput` - Full kubeconfig for kubectl
 - `clusterNameOutput` - Cluster name
 - `networkName` - VPC network name
+- `ingressNginxStatus` - NGINX Ingress Controller Helm release status
