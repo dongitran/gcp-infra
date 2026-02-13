@@ -156,4 +156,3 @@ export const kubeconfigOutput = kubeconfig;
 export const clusterNameOutput = cluster.name;
 export const networkName = network.name;
 export const ingressNginxStatus = nginxIngress.status;
-
