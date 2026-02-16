@@ -57,7 +57,6 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
 
 // Node Pool: 2x e2-medium, 50GB disk
 const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
-    deleteBeforeReplace: true,
     cluster: cluster.name,
     location: zone,
     project,
@@ -80,6 +79,8 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
         autoRepair: true,
         autoUpgrade: true,
     },
+}, {
+    deleteBeforeReplace: true,
 });
 
 // Build kubeconfig from cluster info
