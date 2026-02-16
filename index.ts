@@ -55,9 +55,8 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: 2x e2-medium, 50GB SSD disk
-// Renamed to force recreation with new disk type
-const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v2", {
+// Node Pool: 2x e2-medium, 50GB disk
+const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v3", {
     cluster: cluster.name,
     location: zone,
     project,
@@ -66,7 +65,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v2", {
     nodeConfig: {
         machineType: "e2-medium",
         diskSizeGb: 50,
-        diskType: "pd-balanced",
+        diskType: "pd-standard",
         oauthScopes: [
             "https://www.googleapis.com/auth/cloud-platform",
         ],
