@@ -134,12 +134,13 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     chart: "ingress-nginx",
     version: "4.12.0",
     namespace: ingressNs.metadata.name,
+    timeout: 600, // 10 minutes timeout
     repositoryOpts: {
         repo: "https://kubernetes.github.io/ingress-nginx",
     },
     values: {
         controller: {
-            replicaCount: 2,  // 2 replicas for HA across 2 nodes
+            replicaCount: 1,  // 1 replica - will scale to 2 after ArgoCD deployment
             service: {
                 type: "LoadBalancer",
             },
@@ -202,6 +203,7 @@ const argocd = new k8s.helm.v3.Release("argocd", {
     chart: "argo-cd",
     version: "7.7.11", // ArgoCD v2.13.x
     namespace: argocdNs.metadata.name,
+    timeout: 900, // 15 minutes timeout for ArgoCD
     repositoryOpts: {
         repo: "https://argoproj.github.io/argo-helm",
     },
