@@ -15,8 +15,8 @@
 | 🔗 **VPC Network** | Custom VPC, no auto-subnets |
 | 🧩 **Subnet** | `10.0.0.0/24` + secondary ranges for pods & services |
 | ☸️ **GKE Cluster** | Zonal, STABLE channel, Workload Identity |
-| 🖥️ **Node Pool** | 2x `e2-medium`, 50GB disk, auto-repair & auto-upgrade |
-| 🌐 **NGINX Ingress** | Helm chart, LoadBalancer service for external traffic |
+| 🖥️ **Node Pool** | 2x `e2-medium`, 50GB SSD (pd-balanced), auto-repair & auto-upgrade |
+| 🌐 **NGINX Ingress** | Helm chart, 2 replicas, LoadBalancer service for external traffic |
 
 ## 🚀 Getting Started
 

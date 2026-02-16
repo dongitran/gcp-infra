@@ -65,7 +65,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     nodeConfig: {
         machineType: "e2-medium",
         diskSizeGb: 50,
-        diskType: "pd-standard",
+        diskType: "pd-balanced",
         oauthScopes: [
             "https://www.googleapis.com/auth/cloud-platform",
         ],
@@ -135,14 +135,44 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     },
     values: {
         controller: {
-            replicaCount: 1,
+            replicaCount: 2,
             service: {
                 type: "LoadBalancer",
             },
             resources: {
-                requests: { cpu: "100m", memory: "128Mi" },
-                limits: { cpu: "250m", memory: "256Mi" },
+                requests: { cpu: "200m", memory: "256Mi" },
+                limits: { cpu: "1000m", memory: "512Mi" },
             },
+            // Spread replicas across different nodes for HA
+            affinity: {
+                podAntiAffinity: {
+                    preferredDuringSchedulingIgnoredDuringExecution: [{
+                        weight: 100,
+                        podAffinityTerm: {
+                            labelSelector: {
+                                matchExpressions: [{
+                                    key: "app.kubernetes.io/name",
+                                    operator: "In",
+                                    values: ["ingress-nginx"],
+                                }],
+                            },
+                            topologyKey: "kubernetes.io/hostname",
+                        },
+                    }],
+                },
+            },
+            // Ensure ingress pods are not on the same node
+            topologySpreadConstraints: [{
+                maxSkew: 1,
+                topologyKey: "kubernetes.io/hostname",
+                whenUnsatisfiable: "ScheduleAnyway",
+                labelSelector: {
+                    matchLabels: {
+                        "app.kubernetes.io/name": "ingress-nginx",
+                        "app.kubernetes.io/component": "controller",
+                    },
+                },
+            }],
         },
     },
 }, { provider: k8sProvider, dependsOn: [nodePool] });

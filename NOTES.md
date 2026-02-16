@@ -152,3 +152,22 @@ gh secret set TELEGRAM_CHAT_ID --body "chat-id-here"
 ```
 
 Workflow dùng `curl` gọi Telegram Bot API `sendMessage` với Markdown format.
+
+## 12. Cải thiện Performance (2026-02-16)
+
+### a) Chuyển sang SSD (pd-balanced)
+- **Lý do**: `pd-standard` (HDD) có IOPS thấp (1,000 read IOPS), ảnh hưởng đến performance của container runtime
+- **Giải pháp**: Dùng `pd-balanced` - SSD với 12,000 read IOPS, balance giữa performance và cost
+- **Impact**: Container pull, volume mount, và I/O operations nhanh hơn đáng kể
+
+### b) Tăng NGINX Ingress Controller resources
+- **Lý do**: Config cũ (100m/128Mi) quá thấp cho production, có thể gây latency cao hoặc OOM
+- **Thay đổi**:
+  - CPU requests: 100m → 200m (2x)
+  - Memory requests: 128Mi → 256Mi (2x)
+  - CPU limits: 250m → 1000m (4x)
+  - Memory limits: 256Mi → 512Mi (2x)
+  - Replicas: 1 → 2 (high availability)
+- **Pod Anti-Affinity**: Đảm bảo 2 replicas không chạy trên cùng 1 node
+- **Topology Spread Constraints**: Phân bố đều pods across nodes
+- **Impact**: Xử lý traffic tốt hơn, không còn single point of failure

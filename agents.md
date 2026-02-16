@@ -32,9 +32,9 @@ gcp-infra/
 1. **VPC Network** (`gcp-infra-network`) - Custom VPC with no auto-subnets
 2. **Subnet** (`gcp-infra-subnet`) - Primary CIDR `10.0.0.0/24` with secondary ranges for pods and services
 3. **GKE Cluster** (`gcp-infra-cluster`) - Zonal cluster with Workload Identity, STABLE release channel, default node pool removed
-4. **Node Pool** (`gcp-infra-nodes`) - 2x `e2-medium` nodes, 50GB `pd-standard` disk, auto-repair/upgrade enabled
+4. **Node Pool** (`gcp-infra-nodes`) - 2x `e2-medium` nodes, 50GB `pd-balanced` (SSD) disk, auto-repair/upgrade enabled
 5. **Kubernetes Provider** (`gke-k8s`) - For managing K8s resources via Pulumi
-6. **NGINX Ingress Controller** (`ingress-nginx`) - Helm chart v4.12.0, 1 replica, LoadBalancer service for external traffic
+6. **NGINX Ingress Controller** (`ingress-nginx`) - Helm chart v4.12.0, 2 replicas with pod anti-affinity, LoadBalancer service for external traffic, resources: 200m/256Mi requests, 1000m/512Mi limits
 
 ## Key Configuration
 
