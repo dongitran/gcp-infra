@@ -55,12 +55,13 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: 2x e2-medium, 50GB disk
-const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
+// Node Pool: 2x e2-medium, 50GB SSD disk
+// Renamed to force recreation with new disk type
+const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v2", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 1,  // Tạm giảm xuống 1 để tránh quota issue khi update disk type
+    nodeCount: 2,
 
     nodeConfig: {
         machineType: "e2-medium",
@@ -72,6 +73,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
         workloadMetadataConfig: {
             mode: "GKE_METADATA",
         },
+
     },
 
     management: {
