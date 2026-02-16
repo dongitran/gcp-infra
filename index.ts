@@ -61,7 +61,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v2", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 2,
+    nodeCount: 1,  // Tạm thờii 1 node để tránh quota
 
     nodeConfig: {
         machineType: "e2-medium",
