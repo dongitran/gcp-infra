@@ -65,7 +65,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     nodeConfig: {
         machineType: "e2-medium",
         diskSizeGb: 50,
-        diskType: "pd-standard",
+        diskType: "pd-balanced",
         oauthScopes: [
             "https://www.googleapis.com/auth/cloud-platform",
         ],
