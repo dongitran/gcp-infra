@@ -38,6 +38,7 @@ jobs:
         run: npm ci
 
       - uses: pulumi/actions@v6
+        id: pulumi
         with:
           command: up
           stack-name: dongitran/gcp-infra/dev
@@ -79,6 +80,24 @@ jobs:
                 disable_web_page_preview: true,
                 text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🔗 [View run](\($url))"
               }')"
+
+      - name: Export Kubeconfig
+        if: success()
+        run: |
+          # Get kubeconfig from gcloud (more reliable)
+          gcloud container clusters get-credentials gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID
+          KUBECONFIG=$(cat ~/.kube/config | base64 -w 0)
+          echo "kubeconfig=$KUBECONFIG" >> $GITHUB_OUTPUT
+          echo "$KUBECONFIG" | base64 -d > kubeconfig.yaml
+        id: kubeconfig
+
+      - name: Upload Kubeconfig Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kubeconfig
+          path: kubeconfig.yaml
+          retention-days: 30
 
       - name: Notify Telegram (failure)
         if: failure()
