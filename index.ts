@@ -134,7 +134,7 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     chart: "ingress-nginx",
     version: "4.12.0",
     namespace: ingressNs.metadata.name,
-    timeout: 600, // 10 minutes timeout
+    timeout: 300, // 5 minutes - skipAwait will handle the rest // 10 minutes timeout
     repositoryOpts: {
         repo: "https://kubernetes.github.io/ingress-nginx",
     },
@@ -264,7 +264,11 @@ const argocd = new k8s.helm.v3.Release("argocd", {
             enabled: false,
         },
     },
-}, { provider: k8sProvider, dependsOn: [argocdNs, nginxIngress] });
+}, { 
+    provider: k8sProvider, 
+    dependsOn: [argocdNs, nginxIngress],
+    skipAwait: true, // Don't wait for pods to be ready (avoid timeout)
+});
 
 // ============================================
 // EXPORTS
