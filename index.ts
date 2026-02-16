@@ -81,6 +81,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     },
 }, {
     deleteBeforeReplace: true,
+    replaceOnChanges: ["nodeConfig"],
 });
 
 // Build kubeconfig from cluster info
