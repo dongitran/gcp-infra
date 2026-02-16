@@ -183,93 +183,6 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
 }, { provider: k8sProvider, dependsOn: [nodePool] });
 
 // ============================================
-// ARGOCD - Minimal deployment for 2-node cluster
-// ============================================
-
-// ArgoCD Namespace
-const argocdNs = new k8s.core.v1.Namespace("argocd", {
-    metadata: {
-        name: "argocd",
-        labels: {
-            "app.kubernetes.io/managed-by": "pulumi",
-        },
-    },
-}, { provider: k8sProvider, dependsOn: [nodePool] });
-
-// ArgoCD Helm Release - Minimal config
-const argocd = new k8s.helm.v3.Release("argocd", {
-    name: "argocd",
-    chart: "argo-cd",
-    version: "7.7.11",
-    namespace: argocdNs.metadata.name,
-    timeout: 600,
-    repositoryOpts: {
-        repo: "https://argoproj.github.io/argo-helm",
-    },
-    values: {
-        configs: {
-            params: {
-                "server.insecure": true,
-            },
-            cm: {
-                "admin.enabled": true,
-                "users.anonymous.enabled": false,
-            },
-            secret: {
-                argocdServerAdminPasswordMtime: "1970-01-01T00:00:00Z",
-            },
-        },
-        // Minimal resources for 2-node cluster
-        controller: {
-            replicas: 1,
-            resources: {
-                requests: { cpu: "100m", memory: "128Mi" },
-                limits: { cpu: "300m", memory: "256Mi" },
-            },
-        },
-        dex: {
-            enabled: false,
-        },
-        redis: {
-            enabled: true,
-            resources: {
-                requests: { cpu: "50m", memory: "32Mi" },
-                limits: { cpu: "100m", memory: "64Mi" },
-            },
-        },
-        server: {
-            replicas: 1,
-            resources: {
-                requests: { cpu: "50m", memory: "64Mi" },
-                limits: { cpu: "200m", memory: "128Mi" },
-            },
-            service: {
-                type: "ClusterIP",
-            },
-            ingress: {
-                enabled: false,
-            },
-        },
-        repoServer: {
-            replicas: 1,
-            resources: {
-                requests: { cpu: "50m", memory: "64Mi" },
-                limits: { cpu: "200m", memory: "128Mi" },
-            },
-        },
-        applicationSet: {
-            enabled: false, // Disable to save resources
-        },
-        notifications: {
-            enabled: false,
-        },
-    },
-}, { 
-    provider: k8sProvider, 
-    dependsOn: [argocdNs, nginxIngress],
-});
-
-// ============================================
 // EXPORTS
 // ============================================
 export const clusterEndpoint = cluster.endpoint;
@@ -279,28 +192,5 @@ export const clusterCaCertificate = cluster.masterAuth.apply(
 export const kubeconfigOutput = kubeconfig;
 export const clusterNameOutput = cluster.name;
 export const networkName = network.name;
-export const ingressNginxStatus = nginxIngress.status;
-
-// ArgoCD Exports
-export const argocdNamespace = argocdNs.metadata.name;
-export const argocdStatus = argocd.status;
-
-// ArgoCD Access Instructions
-export const argocdAccessInfo = pulumi.interpolate`
-ArgoCD Access Information:
-=========================
-Namespace: ${argocdNs.metadata.name}
-
-Access via Port-forward:
-  kubectl port-forward svc/argocd-server -n ${argocdNs.metadata.name} 8080:80
-
-Then open: http://localhost:8080
-
-Get admin password:
-  kubectl -n ${argocdNs.metadata.name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
-
-Login:
-  Username: admin
-  Password: (see command above)
-`;        
+export const ingressNginxStatus = nginxIngress.status;        
 
