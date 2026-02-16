@@ -305,18 +305,7 @@ g, admin, role:admin`,
                 requests: { cpu: "100m", memory: "256Mi" },
                 limits: { cpu: "500m", memory: "512Mi" },
             },
-            // Enable helm for GitOps
-            env: [
-                { name: "HELM_CACHE_HOME", value: "/helm-working-dir/cache" },
-                { name: "HELM_CONFIG_HOME", value: "/helm-working-dir/config" },
-                { name: "HELM_DATA_HOME", value: "/helm-working-dir/data" },
-            ],
-            volumeMounts: [
-                { name: "helm-working-dir", mountPath: "/helm-working-dir" },
-            ],
-            volumes: [
-                { name: "helm-working-dir", emptyDir: {} },
-            ],
+            // Helm support is enabled by default in ArgoCD
         },
         applicationSet: {
             enabled: true,
