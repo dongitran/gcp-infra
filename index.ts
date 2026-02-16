@@ -197,130 +197,88 @@ const argocdNs = new k8s.core.v1.Namespace("argocd", {
     },
 }, { provider: k8sProvider, dependsOn: [nodePool] });
 
-// ArgoCD Helm Release
+// ArgoCD Helm Release - Simplified for 2-node cluster
 const argocd = new k8s.helm.v3.Release("argocd", {
     name: "argocd",
     chart: "argo-cd",
     version: "7.7.11", // ArgoCD v2.13.x
     namespace: argocdNs.metadata.name,
-    timeout: 900, // 15 minutes timeout for ArgoCD
+    timeout: 600, // 10 minutes timeout
     repositoryOpts: {
         repo: "https://argoproj.github.io/argo-helm",
     },
     values: {
         global: {
-            domain: "argocd.local", // Placeholder - update with real domain
+            domain: "argocd.local",
         },
         configs: {
             params: {
-                "server.insecure": true, // Terminate TLS at ingress
+                "server.insecure": true,
                 "server.basehref": "/",
                 "server.rootpath": "/",
             },
             cm: {
                 "application.instanceLabelKey": "argocd.argoproj.io/instance",
                 "admin.enabled": true,
-                "statusbadge.enabled": true,
                 "users.anonymous.enabled": false,
-                // Enable resource tracking for better GitOps
-                "resource.trackingMethod": "annotation",
             },
             rbac: {
-                // Default policy: admin has full access
                 "policy.default": "role:readonly",
                 "policy.csv": `p, role:admin, applications, *, */*, allow
-p, role:admin, clusters, *, *, allow
-p, role:admin, repositories, *, *, allow
-p, role:admin, exec, create, */*, allow
 g, admin, role:admin`,
             },
             secret: {
-                // Generate admin password - will be exported
                 argocdServerAdminPasswordMtime: "1970-01-01T00:00:00Z",
             },
         },
+        // Single replica for all components (2-node cluster constraint)
         controller: {
-            replicas: 1, // Application controller không cần HA (stateful)
+            replicas: 1,
             resources: {
-                requests: { cpu: "250m", memory: "512Mi" },
-                limits: { cpu: "1000m", memory: "1Gi" },
+                requests: { cpu: "200m", memory: "256Mi" },
+                limits: { cpu: "500m", memory: "512Mi" },
             },
         },
         dex: {
-            enabled: false, // Disable Dex - dùng built-in admin auth
+            enabled: false,
         },
         redis: {
             enabled: true,
-            // Redis HA config
-            ha: {
-                enabled: false, // Single redis cho dev/staging
+            resources: {
+                requests: { cpu: "50m", memory: "64Mi" },
+                limits: { cpu: "100m", memory: "128Mi" },
             },
+        },
+        server: {
+            replicas: 1,
+            resources: {
+                requests: { cpu: "100m", memory: "128Mi" },
+                limits: { cpu: "250m", memory: "256Mi" },
+            },
+            service: {
+                type: "ClusterIP",
+            },
+            ingress: {
+                enabled: false,
+            },
+        },
+        repoServer: {
+            replicas: 1,
             resources: {
                 requests: { cpu: "100m", memory: "128Mi" },
                 limits: { cpu: "250m", memory: "256Mi" },
             },
         },
-        server: {
-            replicas: 2, // HA for ArgoCD server
-            resources: {
-                requests: { cpu: "100m", memory: "256Mi" },
-                limits: { cpu: "500m", memory: "512Mi" },
-            },
-            // Service configuration
-            service: {
-                type: "ClusterIP", // Dùng ingress thay vì LoadBalancer
-                annotations: {},
-            },
-            // Ingress configuration
-            ingress: {
-                enabled: false, // Tự quản lý ingress riêng
-            },
-            // Pod disruption budget
-            pdb: {
-                enabled: true,
-                minAvailable: 1,
-            },
-            // Affinity để spread across nodes
-            affinity: {
-                podAntiAffinity: {
-                    preferredDuringSchedulingIgnoredDuringExecution: [{
-                        weight: 100,
-                        podAffinityTerm: {
-                            labelSelector: {
-                                matchExpressions: [{
-                                    key: "app.kubernetes.io/name",
-                                    operator: "In",
-                                    values: ["argocd-server"],
-                                }],
-                            },
-                            topologyKey: "kubernetes.io/hostname",
-                        },
-                    }],
-                },
-            },
-        },
-        repoServer: {
-            replicas: 2, // Repo server HA
-            resources: {
-                requests: { cpu: "100m", memory: "256Mi" },
-                limits: { cpu: "500m", memory: "512Mi" },
-            },
-            // Helm support is enabled by default in ArgoCD
-        },
         applicationSet: {
             enabled: true,
-            replicaCount: 2,
-            resources: {
-                requests: { cpu: "100m", memory: "256Mi" },
-                limits: { cpu: "250m", memory: "512Mi" },
-            },
-        },
-        notifications: {
-            enabled: true,
+            replicaCount: 1,
             resources: {
                 requests: { cpu: "50m", memory: "128Mi" },
                 limits: { cpu: "100m", memory: "256Mi" },
             },
+        },
+        notifications: {
+            enabled: false, // Disable to save resources
         },
     },
 }, { provider: k8sProvider, dependsOn: [argocdNs, nginxIngress] });
