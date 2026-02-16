@@ -139,7 +139,7 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     },
     values: {
         controller: {
-            replicaCount: 1,  // Tạm 1 replica vì mới có 1 node sau khi recreate
+            replicaCount: 2,  // 2 replicas for HA across 2 nodes
             service: {
                 type: "LoadBalancer",
             },
@@ -181,7 +181,201 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     },
 }, { provider: k8sProvider, dependsOn: [nodePool] });
 
-// Exports
+// ============================================
+// ARGOCD - GitOps Continuous Delivery
+// ============================================
+
+// ArgoCD Namespace
+const argocdNs = new k8s.core.v1.Namespace("argocd", {
+    metadata: {
+        name: "argocd",
+        labels: {
+            "app.kubernetes.io/managed-by": "pulumi",
+            "app.kubernetes.io/part-of": "argocd",
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [nodePool] });
+
+// ArgoCD Helm Release
+const argocd = new k8s.helm.v3.Release("argocd", {
+    name: "argocd",
+    chart: "argo-cd",
+    version: "7.7.11", // ArgoCD v2.13.x
+    namespace: argocdNs.metadata.name,
+    repositoryOpts: {
+        repo: "https://argoproj.github.io/argo-helm",
+    },
+    values: {
+        global: {
+            domain: "argocd.local", // Placeholder - update with real domain
+        },
+        configs: {
+            params: {
+                "server.insecure": true, // Terminate TLS at ingress
+                "server.basehref": "/",
+                "server.rootpath": "/",
+            },
+            cm: {
+                "application.instanceLabelKey": "argocd.argoproj.io/instance",
+                "admin.enabled": true,
+                "statusbadge.enabled": true,
+                "users.anonymous.enabled": false,
+                // Enable resource tracking for better GitOps
+                "resource.trackingMethod": "annotation",
+            },
+            rbac: {
+                // Default policy: admin has full access
+                "policy.default": "role:readonly",
+                "policy.csv": `p, role:admin, applications, *, */*, allow
+p, role:admin, clusters, *, *, allow
+p, role:admin, repositories, *, *, allow
+p, role:admin, exec, create, */*, allow
+g, admin, role:admin`,
+            },
+            secret: {
+                // Generate admin password - will be exported
+                argocdServerAdminPasswordMtime: "1970-01-01T00:00:00Z",
+            },
+        },
+        controller: {
+            replicas: 1, // Application controller không cần HA (stateful)
+            resources: {
+                requests: { cpu: "250m", memory: "512Mi" },
+                limits: { cpu: "1000m", memory: "1Gi" },
+            },
+        },
+        dex: {
+            enabled: false, // Disable Dex - dùng built-in admin auth
+        },
+        redis: {
+            enabled: true,
+            // Redis HA config
+            ha: {
+                enabled: false, // Single redis cho dev/staging
+            },
+            resources: {
+                requests: { cpu: "100m", memory: "128Mi" },
+                limits: { cpu: "250m", memory: "256Mi" },
+            },
+        },
+        server: {
+            replicas: 2, // HA for ArgoCD server
+            resources: {
+                requests: { cpu: "100m", memory: "256Mi" },
+                limits: { cpu: "500m", memory: "512Mi" },
+            },
+            // Service configuration
+            service: {
+                type: "ClusterIP", // Dùng ingress thay vì LoadBalancer
+                annotations: {},
+            },
+            // Ingress configuration
+            ingress: {
+                enabled: false, // Tự quản lý ingress riêng
+            },
+            // Pod disruption budget
+            pdb: {
+                enabled: true,
+                minAvailable: 1,
+            },
+            // Affinity để spread across nodes
+            affinity: {
+                podAntiAffinity: {
+                    preferredDuringSchedulingIgnoredDuringExecution: [{
+                        weight: 100,
+                        podAffinityTerm: {
+                            labelSelector: {
+                                matchExpressions: [{
+                                    key: "app.kubernetes.io/name",
+                                    operator: "In",
+                                    values: ["argocd-server"],
+                                }],
+                            },
+                            topologyKey: "kubernetes.io/hostname",
+                        },
+                    }],
+                },
+            },
+        },
+        repoServer: {
+            replicas: 2, // Repo server HA
+            resources: {
+                requests: { cpu: "100m", memory: "256Mi" },
+                limits: { cpu: "500m", memory: "512Mi" },
+            },
+            // Enable helm for GitOps
+            env: [
+                { name: "HELM_CACHE_HOME", value: "/helm-working-dir/cache" },
+                { name: "HELM_CONFIG_HOME", value: "/helm-working-dir/config" },
+                { name: "HELM_DATA_HOME", value: "/helm-working-dir/data" },
+            ],
+            volumeMounts: [
+                { name: "helm-working-dir", mountPath: "/helm-working-dir" },
+            ],
+            volumes: [
+                { name: "helm-working-dir", emptyDir: {} },
+            ],
+        },
+        applicationSet: {
+            enabled: true,
+            replicaCount: 2,
+            resources: {
+                requests: { cpu: "100m", memory: "256Mi" },
+                limits: { cpu: "250m", memory: "512Mi" },
+            },
+        },
+        notifications: {
+            enabled: true,
+            resources: {
+                requests: { cpu: "50m", memory: "128Mi" },
+                limits: { cpu: "100m", memory: "256Mi" },
+            },
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [argocdNs, nginxIngress] });
+
+// ArgoCD Ingress - Expose qua NGINX Ingress Controller
+const argocdIngress = new k8s.networking.v1.Ingress("argocd-ingress", {
+    metadata: {
+        name: "argocd-server",
+        namespace: argocdNs.metadata.name,
+        annotations: {
+            "kubernetes.io/ingress.class": "nginx",
+            "nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
+            "nginx.ingress.kubernetes.io/backend-protocol": "HTTP",
+            "nginx.ingress.kubernetes.io/ssl-passthrough": "false",
+            // Timeout settings for ArgoCD
+            "nginx.ingress.kubernetes.io/proxy-connect-timeout": "300",
+            "nginx.ingress.kubernetes.io/proxy-send-timeout": "300",
+            "nginx.ingress.kubernetes.io/proxy-read-timeout": "300",
+            // WebSocket support (ArgoCD UI uses WebSocket)
+            "nginx.ingress.kubernetes.io/proxy-http-version": "1.1",
+            "nginx.ingress.kubernetes.io/proxy-buffering": "off",
+        },
+    },
+    spec: {
+        ingressClassName: "nginx",
+        rules: [{
+            host: "argocd.local", // Placeholder - update with real domain
+            http: {
+                paths: [{
+                    path: "/",
+                    pathType: "Prefix",
+                    backend: {
+                        service: {
+                            name: "argocd-server",
+                            port: { number: 80 },
+                        },
+                    },
+                }],
+            },
+        }],
+    },
+}, { provider: k8sProvider, dependsOn: [argocd, nginxIngress] });
+
+// ============================================
+// EXPORTS
+// ============================================
 export const clusterEndpoint = cluster.endpoint;
 export const clusterCaCertificate = cluster.masterAuth.apply(
     (auth) => auth.clusterCaCertificate,
@@ -190,4 +384,53 @@ export const kubeconfigOutput = kubeconfig;
 export const clusterNameOutput = cluster.name;
 export const networkName = network.name;
 export const ingressNginxStatus = nginxIngress.status;
+
+// ArgoCD Exports
+export const argocdNamespace = argocdNs.metadata.name;
+export const argocdStatus = argocd.status;
+export const argocdIngressName = argocdIngress.metadata.name;
+
+// ArgoCD Admin Password (lấy từ Kubernetes Secret)
+export const argocdAdminPassword = pulumi
+    .all([argocd.status, k8sProvider])
+    .apply(async ([status, provider]) => {
+        // Chỉ lấy password sau khi ArgoCD đã deploy xong
+        if (status && status.name === "argocd") {
+            try {
+                // Lấy secret từ Kubernetes
+                const secret = await k8s.core.v1.Secret.get(
+                    "argocd-initial-admin-secret",
+                    pulumi.interpolate`${argocdNs.metadata.name}/argocd-initial-admin-secret`,
+                    { provider: k8sProvider }
+                );
+                return secret.data["password"].apply((pwd: string) => 
+                    Buffer.from(pwd, "base64").toString("utf-8")
+                );
+            } catch (e) {
+                return "Password not available yet. Retrieve manually with: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d";
+            }
+        }
+        return "Waiting for ArgoCD deployment...";
+    });
+
+// ArgoCD Access Info
+export const argocdAccessInfo = pulumi.interpolate`
+ArgoCD Deployment Info:
+======================
+Namespace: ${argocdNs.metadata.name}
+Ingress: argocd.local (update DNS or /etc/hosts to point to ingress IP)
+
+Access Methods:
+1. Via Ingress (recommended): https://argocd.local
+2. Via Port-forward: kubectl port-forward svc/argocd-server -n ${argocdNs.metadata.name} 8080:80
+
+Initial Admin Password:
+- Get with: kubectl -n ${argocdNs.metadata.name} get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+
+CLI Login:
+argocd login argocd.local --username admin --password <password>
+
+Web UI:
+https://argocd.local (username: admin)
+`;    
 
