@@ -34,8 +34,7 @@ gcp-infra/
 3. **GKE Cluster** (`gcp-infra-cluster`) - Zonal cluster with Workload Identity, STABLE release channel, default node pool removed
 4. **Node Pool** (`gcp-infra-nodes`) - 2x `e2-medium` nodes, 50GB `pd-balanced` (SSD) disk, auto-repair/upgrade enabled
 5. **Kubernetes Provider** (`gke-k8s`) - For managing K8s resources via Pulumi
-6. **NGINX Ingress Controller** (`ingress-nginx`) - Helm chart v4.12.0, 2 replicas with pod anti-affinity, LoadBalancer service for external traffic, resources: 200m/256Mi requests, 1000m/512Mi limits
-7. **ArgoCD** (`argocd`) - Helm chart v7.7.11, GitOps continuous delivery platform with HA configuration (2 server replicas, 2 repo-server replicas)
+6. **NGINX Ingress Controller** (`ingress-nginx`) - Helm chart v4.12.0, 1 replica (2-node cluster constraint), LoadBalancer service for external traffic, resources: 200m/256Mi requests, 1000m/512Mi limits
 
 ## Key Configuration
 
@@ -76,42 +75,6 @@ pulumi up                # Deploy infrastructure
 pulumi destroy           # Tear down infrastructure
 ```
 
-## ArgoCD Configuration
-
-ArgoCD is deployed with the following architecture:
-
-### Components
-| Component | Replicas | Resources | Notes |
-|-----------|----------|-----------|-------|
-| Server | 2 | 100m/256Mi - 500m/512Mi | HA with pod anti-affinity |
-| Repo Server | 2 | 100m/256Mi - 500m/512Mi | Helm support enabled |
-| Application Controller | 1 | 250m/512Mi - 1000m/1Gi | Stateful component |
-| ApplicationSet | 2 | 100m/256Mi - 250m/512Mi | GitOps application generator |
-| Notifications | 1 | 50m/128Mi - 100m/256Mi | Webhook notifications |
-| Redis | 1 | 100m/128Mi - 250m/256Mi | Cache for ArgoCD |
-
-### Access Methods
-1. **Via Ingress**: `https://argocd.local` (update DNS or /etc/hosts)
-2. **Via Port-forward**: `kubectl port-forward svc/argocd-server -n argocd 8080:80`
-
-### Initial Setup
-```bash
-# Get admin password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
-
-# Login via CLI
-argocd login argocd.local --username admin --password <password>
-
-# Change admin password
-argocd account update-password --current-password <initial> --new-password <new>
-```
-
-### Security Notes
-- TLS terminated at NGINX Ingress Controller
-- ArgoCD server runs in insecure mode (HTTP) behind ingress
-- Admin auth enabled with auto-generated initial password
-- Anonymous access disabled
-
 ## Exports
 
 The stack exports these values for use by other stacks or scripts:
@@ -122,8 +85,3 @@ The stack exports these values for use by other stacks or scripts:
 - `clusterNameOutput` - Cluster name
 - `networkName` - VPC network name
 - `ingressNginxStatus` - NGINX Ingress Controller Helm release status
-- `argocdNamespace` - ArgoCD namespace name
-- `argocdStatus` - ArgoCD Helm release status
-- `argocdIngressName` - ArgoCD Ingress resource name
-- `argocdAdminPassword` - Initial admin password (sensitive)
-- `argocdAccessInfo` - ArgoCD access instructions
