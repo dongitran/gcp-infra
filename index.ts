@@ -61,7 +61,7 @@ const nodePool = new gcp.container.NodePool("gcp-infra-nodes-v2", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 1,  // Tạm thờii 1 node để tránh quota
+    nodeCount: 2,
 
     nodeConfig: {
         machineType: "e2-medium",
@@ -137,7 +137,7 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
     },
     values: {
         controller: {
-            replicaCount: 2,
+            replicaCount: 1,  // Tạm 1 replica vì mới có 1 node sau khi recreate
             service: {
                 type: "LoadBalancer",
             },
