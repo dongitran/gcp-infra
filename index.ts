@@ -55,12 +55,12 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: 1x e2-medium, 50GB disk (temporarily reduced to avoid IP quota limit)
+// Node Pool: 2x e2-medium, 50GB SSD
 const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 1,
+    nodeCount: 2,
 
     nodeConfig: {
         machineType: "e2-medium",
