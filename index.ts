@@ -192,5 +192,11 @@ export const clusterCaCertificate = cluster.masterAuth.apply(
 export const kubeconfigOutput = kubeconfig;
 export const clusterNameOutput = cluster.name;
 export const networkName = network.name;
-export const ingressNginxStatus = nginxIngress.status;        
+export const ingressNginxStatus = nginxIngress.status;
+
+// Stack Reference outputs for other projects
+export const clusterLocation = cluster.location;
+export const clusterProject = cluster.project;
+export const ingressNginxNamespace = ingressNs.metadata.name;
+export const ingressNginxServiceName = pulumi.interpolate`${nginxIngress.name}-controller`;        
 
