@@ -6,9 +6,10 @@ Pulumi IaC project provisioning GKE cluster on GCP.
 
 | Component | Config |
 |-----------|--------|
-| **GKE Cluster** | Zonal, 2x e2-medium nodes, 50GB SSD |
+| **GKE Cluster** | Zonal, 2x e2-standard-2 nodes (8 vCPU), 50GB SSD |
 | **VPC** | Custom, 10.0.0.0/24, secondary ranges for pods/services |
 | **Ingress** | NGINX Controller v4.12.0, LoadBalancer (34.177.107.211) |
+| **PostgreSQL** | v18.2, standalone, 4Gi storage, NodePort 30432 |
 | **Location** | asia-southeast1-a |
 
 ## Project Structure
@@ -40,6 +41,23 @@ pulumi stack output             # Show all outputs
 gcloud container clusters get-credentials gcp-infra --zone asia-southeast1-a
 kubectl get nodes
 kubectl get svc -n ingress-nginx
+```
+
+## Database Access
+
+**PostgreSQL 18.2** (`databases` namespace)
+
+```bash
+# Internal (within cluster)
+postgresql.databases.svc.cluster.local:5432
+
+# External (via NodePort)
+<NODE_EXTERNAL_IP>:30432
+
+# Credentials
+User: postgres
+Database: app
+Password: $POSTGRES_PASSWORD (GitHub Secret)
 ```
 
 ## Configuration
