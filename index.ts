@@ -25,6 +25,21 @@ const subnet = new gcp.compute.Subnetwork("gcp-infra-subnet", {
     ],
 });
 
+// Firewall Rule: Allow PostgreSQL NodePort access
+const postgresFirewall = new gcp.compute.Firewall("allow-postgres-nodeport", {
+    network: network.id,
+    project,
+    allows: [
+        {
+            protocol: "tcp",
+            ports: ["30432"],
+        },
+    ],
+    sourceRanges: ["0.0.0.0/0"], // Allow from anywhere (restrict in production)
+    targetTags: [], // Apply to all instances in the network
+    description: "Allow external access to PostgreSQL NodePort 30432",
+});
+
 // GKE Cluster
 const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     name: clusterName,
