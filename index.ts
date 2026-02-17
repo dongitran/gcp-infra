@@ -55,15 +55,15 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: Upgrading to e2-standard-2 (Phase 1/3: Scale down to 1 node)
+// Node Pool: Upgrading to e2-standard-2 (Phase 2/3: Machine type upgrade)
 const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 1,  // Temporarily scale down before upgrade
+    nodeCount: 1,  // Still 1 node during upgrade
 
     nodeConfig: {
-        machineType: "e2-medium",
+        machineType: "e2-standard-2",  // Upgraded from e2-medium (4 vCPU vs 2 vCPU)
         diskSizeGb: 50,
         diskType: "pd-balanced",
         oauthScopes: [
