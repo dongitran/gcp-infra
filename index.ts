@@ -201,10 +201,12 @@ if (!postgresPassword) {
 }
 
 // Deploy PostgreSQL using Bitnami Helm chart (single master, NodePort)
+// Using latest chart version (no version specified) to ensure working default image tags
+// Bitnami is actively deprecating old debian-12 tags during Photon Linux migration
 const postgresql = new k8s.helm.v3.Release("postgresql", {
     name: "postgresql",
     chart: "postgresql",
-    version: "15.5.38",  // Stable Oct 2024 version
+    // No version specified - uses latest stable chart from Bitnami repo
     namespace: dbNamespace.metadata.name,
     repositoryOpts: {
         repo: "https://charts.bitnami.com/bitnami",
@@ -212,12 +214,6 @@ const postgresql = new k8s.helm.v3.Release("postgresql", {
     values: {
         // Single master configuration (no replicas)
         architecture: "standalone",
-
-        // Use 'latest' tag - verified working on Docker Hub
-        // Specific debian-12 tags are deprecated as Bitnami migrates to Photon Linux
-        image: {
-            tag: "latest",  // Auto-resolves to latest stable PostgreSQL
-        },
 
         auth: {
             database: "app",
