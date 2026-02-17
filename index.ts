@@ -55,7 +55,7 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: 2x e2-medium, 50GB SSD
+// Node Pool: 2x e2-medium, 50GB SSD (recreated after security incident)
 const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     cluster: cluster.name,
     location: zone,
