@@ -48,11 +48,15 @@ kubectl get svc -n ingress-nginx
 **PostgreSQL 18.2** (`databases` namespace)
 
 ```bash
-# Internal (within cluster)
+# Internal (within cluster) ✅
 postgresql.databases.svc.cluster.local:5432
 
-# External (via NodePort)
+# External (via NodePort) ⚠️ Requires firewall rule
 <NODE_EXTERNAL_IP>:30432
+
+# Enable external access (if needed):
+# gcloud compute firewall-rules create allow-postgres-nodeport \
+#   --allow tcp:30432 --source-ranges <YOUR_IP>/32
 
 # Credentials
 User: postgres
