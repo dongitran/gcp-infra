@@ -204,7 +204,7 @@ if (!postgresPassword) {
 const postgresql = new k8s.helm.v3.Release("postgresql", {
     name: "postgresql",
     chart: "postgresql",
-    version: "15.5.38",  // Downgrade to stable Oct 2024 version with known working images
+    version: "15.5.38",  // Stable Oct 2024 version
     namespace: dbNamespace.metadata.name,
     repositoryOpts: {
         repo: "https://charts.bitnami.com/bitnami",
@@ -212,6 +212,12 @@ const postgresql = new k8s.helm.v3.Release("postgresql", {
     values: {
         // Single master configuration (no replicas)
         architecture: "standalone",
+
+        // Use 'latest' tag - verified working on Docker Hub
+        // Specific debian-12 tags are deprecated as Bitnami migrates to Photon Linux
+        image: {
+            tag: "latest",  // Auto-resolves to latest stable PostgreSQL
+        },
 
         auth: {
             database: "app",
