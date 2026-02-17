@@ -90,6 +90,8 @@ Database: app
 Password: $MONGODB_PASSWORD (GitHub Secret)
 ```
 
+> **⚠️ Note:** When deploying new services, update Telegram notifications in [deploy.yml](file:///Users/dongtran/augment/gcp-infra/.github/workflows/deploy.yml#L66-L88) with service info.
+
 ## Configuration
 
 | Key | Source | Default |

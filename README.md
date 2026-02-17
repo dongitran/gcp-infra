@@ -51,12 +51,16 @@ pulumi up
 
 ## 🔄 CI/CD
 
-Push to `main` triggers GitHub Actions workflow that runs `pulumi up` automatically.
+Push to `main` triggers GitHub Actions workflow that runs `pulumi up` automatically.  
+**Concurrency control** ensures commits run sequentially (no parallel deploys).
 
 Requires GitHub Secrets/Variables:
 - 🔑 `PULUMI_ACCESS_TOKEN` (Secret)
 - 🔑 `GCP_CREDENTIALS` (Secret) — Service Account JSON key
 - 📋 `GCP_PROJECT_ID` (Variable)
+- 🗄️ `POSTGRES_PASSWORD` (Secret) — PostgreSQL password
+- 🔴 `REDIS_PASSWORD` (Secret) — Redis password
+- 🍃 `MONGODB_PASSWORD` (Secret) — MongoDB password
 - 🔔 `TELEGRAM_BOT_TOKEN` (Secret) — Deploy notification bot
 - 🔔 `TELEGRAM_CHAT_ID` (Secret) — Deploy notification chat
 
@@ -83,6 +87,7 @@ gcp-infra/
 - `kubeconfigOutput` — Full kubeconfig for `kubectl`
 - `clusterNameOutput` — Cluster name
 - `networkName` — VPC network name
+- `ingressNginxLoadBalancerIP` — NGINX Ingress external IP
 - `ingressNginxStatus` — NGINX Ingress Controller status
 
 ## 🗑️ Tear Down

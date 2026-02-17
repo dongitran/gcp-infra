@@ -6,6 +6,11 @@ on:
     paths-ignore:
       - '*.md'
 
+# Prevent concurrent deployments - ensures commits run sequentially
+concurrency:
+  group: deploy-gke-infra
+  cancel-in-progress: false
+
 env:
   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   PULUMI_CONFIG_PASSPHRASE: ""
