@@ -58,7 +58,8 @@ jobs:
           done
           echo "ingress_ip=${IP:-pending}" >> $GITHUB_OUTPUT
           echo "cluster_ep=$(gcloud container clusters describe gcp-infra --zone asia-southeast1-a --project $GCP_PROJECT_ID --format='value(endpoint)' 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
-          echo "node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}' 2>/dev/null || echo 'unknown')" >> $GITHUB_OUTPUT
+          NODE_IPS=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{", "}{end}' 2>/dev/null | sed 's/, $//' || echo 'unknown')
+          echo "node_ips=${NODE_IPS}" >> $GITHUB_OUTPUT
 
       - name: Notify Telegram (success)
         if: success()
