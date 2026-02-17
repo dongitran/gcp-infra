@@ -76,13 +76,13 @@ jobs:
               --arg actor "${{ github.actor }}" \
               --arg ingress "${{ steps.info.outputs.ingress_ip }}" \
               --arg cluster "${{ steps.info.outputs.cluster_ep }}" \
-              --arg node "${{ steps.info.outputs.node_ip }}" \
+              --arg nodes "${{ steps.info.outputs.node_ips }}" \
               --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               '{
                 chat_id: $chat,
                 parse_mode: "Markdown",
                 disable_web_page_preview: true,
-                text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🖥️ Node: `\($node)` (PostgreSQL: :30432)\n🔗 [View run](\($url))"
+                text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🖥️ Nodes: `\($nodes)`\n🗄️ PostgreSQL: `:30432` (any node)\n🔗 [View run](\($url))"
               }')"
 
       # Note: Kubeconfig available via Pulumi Stack Output: kubeconfigOutput
