@@ -25,19 +25,19 @@ const subnet = new gcp.compute.Subnetwork("gcp-infra-subnet", {
     ],
 });
 
-// Firewall Rule: Allow PostgreSQL and Redis NodePort access
+// Firewall Rule: Allow Database NodePort access
 const databaseFirewall = new gcp.compute.Firewall("allow-database-nodeports", {
     network: network.id,
     project,
     allows: [
         {
             protocol: "tcp",
-            ports: ["30432", "30379"],  // PostgreSQL and Redis
+            ports: ["30432", "30379", "30017"],  // PostgreSQL, Redis, MongoDB
         },
     ],
     sourceRanges: ["0.0.0.0/0"], // Allow from anywhere (restrict in production)
     targetTags: [], // Apply to all instances in the network
-    description: "Allow external access to PostgreSQL:30432 and Redis:30379 NodePorts",
+    description: "Allow external access to database NodePorts: PostgreSQL:30432, Redis:30379, MongoDB:30017",
 });
 
 // GKE Cluster
@@ -318,6 +318,67 @@ const redis = new k8s.helm.v3.Release("redis", {
         },
     },
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
+// ============================================
+// MONGODB DATABASE
+// ============================================
+// Deploy MongoDB for document storage
+
+// Read password from environment (set by GitHub Actions)
+const mongodbPassword = process.env.MONGODB_PASSWORD;
+
+if (!mongodbPassword) {
+    throw new Error("MONGODB_PASSWORD environment variable is required");
+}
+
+// Deploy MongoDB using Bitnami Helm chart (standalone, NodePort)
+const mongodb = new k8s.helm.v3.Release("mongodb", {
+    name: "mongodb",
+    chart: "mongodb",
+    // No version specified - uses latest stable chart
+    namespace: dbNamespace.metadata.name,
+    repositoryOpts: {
+        repo: "https://charts.bitnami.com/bitnami",
+    },
+    values: {
+        // Standalone architecture (no replica set)
+        architecture: "standalone",
+
+        auth: {
+            enabled: true,
+            rootPassword: mongodbPassword,
+            // Create default database
+            databases: ["app"],
+            usernames: ["appuser"],
+            passwords: [mongodbPassword],
+        },
+
+        resources: {
+            requests: {
+                cpu: "500m",
+                memory: "512Mi",
+            },
+            limits: {
+                cpu: "1000m",
+                memory: "1Gi",
+            },
+        },
+
+        persistence: {
+            enabled: true,
+            size: "4Gi",
+            storageClass: "standard-rwo",
+        },
+
+        service: {
+            type: "NodePort",
+            nodePorts: {
+                mongodb: "30017",  // Fixed NodePort for MongoDB (must be string)
+            },
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
 
 
 // ============================================

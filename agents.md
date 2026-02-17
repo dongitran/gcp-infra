@@ -9,7 +9,7 @@ Pulumi IaC project provisioning GKE cluster on GCP.
 | **GKE Cluster** | Zonal, 2x e2-standard-2 nodes (8 vCPU), 50GB SSD |
 | **VPC** | Custom, 10.0.0.0/24, secondary ranges for pods/services |
 | **Ingress** | NGINX Controller v4.12.0, LoadBalancer (34.177.107.211) |
-| **PostgreSQL** | v18.2, standalone, 4Gi storage, NodePort 30432 |
+| **Databases** | PostgreSQL 18.2 (:30432), Redis 8.6 (:30379), MongoDB (:30017) |
 | **Location** | asia-southeast1-a |
 
 ## Project Structure
@@ -45,7 +45,9 @@ kubectl get svc -n ingress-nginx
 
 ## Database Access
 
-**PostgreSQL 18.2** (`databases` namespace)
+All databases deployed in `databases` namespace with NodePort for external access.
+
+**PostgreSQL 18.2**
 
 ```bash
 # Internal (within cluster)
@@ -60,7 +62,7 @@ Database: app
 Password: $POSTGRES_PASSWORD (GitHub Secret)
 ```
 
-**Redis** (`databases` namespace)
+**Redis 8.6**
 
 ```bash
 # Internal (within cluster)
@@ -71,6 +73,21 @@ redis-master.databases.svc.cluster.local:6379
 
 # Credentials
 Password: $REDIS_PASSWORD (GitHub Secret)
+```
+
+**MongoDB**
+
+```bash
+# Internal (within cluster)
+mongodb.databases.svc.cluster.local:27017
+
+# External (via NodePort - firewall managed by Pulumi)
+<NODE_EXTERNAL_IP>:30017
+
+# Credentials
+User: appuser (or root)
+Database: app
+Password: $MONGODB_PASSWORD (GitHub Secret)
 ```
 
 ## Configuration
