@@ -60,6 +60,19 @@ Database: app
 Password: $POSTGRES_PASSWORD (GitHub Secret)
 ```
 
+**Redis** (`databases` namespace)
+
+```bash
+# Internal (within cluster)
+redis-master.databases.svc.cluster.local:6379
+
+# External (via NodePort - firewall managed by Pulumi)
+<NODE_EXTERNAL_IP>:30379
+
+# Credentials
+Password: $REDIS_PASSWORD (GitHub Secret)
+```
+
 ## Configuration
 
 | Key | Source | Default |

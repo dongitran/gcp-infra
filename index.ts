@@ -263,6 +263,63 @@ const postgresql = new k8s.helm.v3.Release("postgresql", {
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });
 
 // ============================================
+// REDIS CACHE
+// ============================================
+// Deploy Redis for caching and session storage
+
+// Read password from environment (set by GitHub Actions)
+const redisPassword = process.env.REDIS_PASSWORD;
+
+if (!redisPassword) {
+    throw new Error("REDIS_PASSWORD environment variable is required");
+}
+
+// Deploy Redis using Bitnami Helm chart (standalone, NodePort)
+const redis = new k8s.helm.v3.Release("redis", {
+    name: "redis",
+    chart: "redis",
+    // No version specified - uses latest stable chart
+    namespace: dbNamespace.metadata.name,
+    repositoryOpts: {
+        repo: "https://charts.bitnami.com/bitnami",
+    },
+    values: {
+        // Standalone architecture (no replication)
+        architecture: "standalone",
+
+        auth: {
+            enabled: true,
+            password: redisPassword,
+        },
+
+        master: {
+            resources: {
+                requests: {
+                    cpu: "250m",
+                    memory: "256Mi",
+                },
+                limits: {
+                    cpu: "500m",
+                    memory: "512Mi",
+                },
+            },
+            persistence: {
+                enabled: true,
+                size: "2Gi",
+                storageClass: "standard-rwo",
+            },
+            service: {
+                type: "NodePort",
+                nodePorts: {
+                    redis: 30379,  // Fixed NodePort for Redis
+                },
+            },
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
+
+// ============================================
 // EXPORTS
 // ============================================
 export const clusterEndpoint = cluster.endpoint;
