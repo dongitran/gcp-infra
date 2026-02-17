@@ -312,7 +312,7 @@ const redis = new k8s.helm.v3.Release("redis", {
             service: {
                 type: "NodePort",
                 nodePorts: {
-                    redis: 30379,  // Fixed NodePort for Redis
+                    redis: "30379",  // Fixed NodePort for Redis (must be string)
                 },
             },
         },
