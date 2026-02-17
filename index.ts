@@ -55,12 +55,12 @@ const cluster = new gcp.container.Cluster("gcp-infra-cluster", {
     deletionProtection: false,
 });
 
-// Node Pool: 2x e2-medium, 50GB SSD (recreated after security incident)
+// Node Pool: Upgrading to e2-standard-2 (Phase 1/3: Scale down to 1 node)
 const nodePool = new gcp.container.NodePool("gcp-infra-nodes", {
     cluster: cluster.name,
     location: zone,
     project,
-    nodeCount: 2,
+    nodeCount: 1,  // Temporarily scale down before upgrade
 
     nodeConfig: {
         machineType: "e2-medium",
