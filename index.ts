@@ -185,63 +185,66 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
 // ============================================
 // POSTGRESQL DATABASE
 // ============================================
+// DISABLED: Insufficient CPU resources on e2-medium cluster (requires 500m, only ~110m available)
+// See debug_analysis.md for details and solutions
+// TODO: Enable when cluster resources are upgraded or reduce CPU request to 250m
 
-// Create databases namespace
-const dbNamespace = new k8s.core.v1.Namespace("databases", {
-    metadata: { name: "databases" },
-}, { provider: k8sProvider, dependsOn: [nodePool] });
-
-// Read password from environment (set by GitHub Actions)
-const postgresPassword = process.env.POSTGRES_PASSWORD;
-
-if (!postgresPassword) {
-    throw new Error("POSTGRES_PASSWORD environment variable is required");
-}
-
-// Deploy PostgreSQL using Bitnami Helm chart (single master, NodePort)
-const postgresql = new k8s.helm.v3.Release("postgresql", {
-    name: "postgresql",
-    chart: "postgresql",
-    version: "16.5.1",
-    namespace: dbNamespace.metadata.name,
-    repositoryOpts: {
-        repo: "https://charts.bitnami.com/bitnami",
-    },
-    values: {
-        // Single master configuration (no replicas)
-        architecture: "standalone",
-
-        auth: {
-            database: "app",
-            username: "postgres",
-            password: postgresPassword,
-        },
-
-        primary: {
-            resources: {
-                requests: {
-                    cpu: "500m",
-                    memory: "512Mi",
-                },
-                limits: {
-                    cpu: "1000m",
-                    memory: "1Gi",
-                },
-            },
-            persistence: {
-                enabled: true,
-                size: "4Gi",
-                storageClass: "standard-rwo",
-            },
-            service: {
-                type: "NodePort",  // Use NodePort instead of ClusterIP
-                nodePorts: {
-                    postgresql: 30432,  // Fixed NodePort for PostgreSQL
-                },
-            },
-        },
-    },
-}, { provider: k8sProvider, dependsOn: [dbNamespace] });
+// // Create databases namespace
+// const dbNamespace = new k8s.core.v1.Namespace("databases", {
+//     metadata: { name: "databases" },
+// }, { provider: k8sProvider, dependsOn: [nodePool] });
+// 
+// // Read password from environment (set by GitHub Actions)
+// const postgresPassword = process.env.POSTGRES_PASSWORD;
+// 
+// if (!postgresPassword) {
+//     throw new Error("POSTGRES_PASSWORD environment variable is required");
+// }
+// 
+// // Deploy PostgreSQL using Bitnami Helm chart (single master, NodePort)
+// const postgresql = new k8s.helm.v3.Release("postgresql", {
+//     name: "postgresql",
+//     chart: "postgresql",
+//     version: "16.5.1",
+//     namespace: dbNamespace.metadata.name,
+//     repositoryOpts: {
+//         repo: "https://charts.bitnami.com/bitnami",
+//     },
+//     values: {
+//         // Single master configuration (no replicas)
+//         architecture: "standalone",
+// 
+//         auth: {
+//             database: "app",
+//             username: "postgres",
+//             password: postgresPassword,
+//         },
+// 
+//         primary: {
+//             resources: {
+//                 requests: {
+//                     cpu: "500m",
+//                     memory: "512Mi",
+//                 },
+//                 limits: {
+//                     cpu: "1000m",
+//                     memory: "1Gi",
+//                 },
+//             },
+//             persistence: {
+//                 enabled: true,
+//                 size: "4Gi",
+//                 storageClass: "standard-rwo",
+//             },
+//             service: {
+//                 type: "NodePort",  // Use NodePort instead of ClusterIP
+//                 nodePorts: {
+//                     postgresql: 30432,  // Fixed NodePort for PostgreSQL
+//                 },
+//             },
+//         },
+//     },
+// }, { provider: k8sProvider, dependsOn: [dbNamespace] });
 
 // ============================================
 // EXPORTS
@@ -261,11 +264,11 @@ export const clusterProject = cluster.project;
 export const ingressNginxNamespace = ingressNs.metadata.name;
 export const ingressNginxServiceName = pulumi.interpolate`${nginxIngress.name}-controller`;
 
-// PostgreSQL outputs
-export const postgresNamespace = dbNamespace.metadata.name;
-export const postgresServiceName = pulumi.interpolate`${postgresql.name}-postgresql`;
-export const postgresNodePort = 30432;
-export const postgresDatabaseName = "app";
-export const postgresUsername = "postgres";
+// PostgreSQL outputs (DISABLED - see PostgreSQL deployment section above)
+// export const postgresNamespace = dbNamespace.metadata.name;
+// export const postgresServiceName = pulumi.interpolate`${postgresql.name}-postgresql`;
+// export const postgresNodePort = 30432;
+// export const postgresDatabaseName = "app";
+// export const postgresUsername = "postgres";
 
 
