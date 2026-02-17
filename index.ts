@@ -266,6 +266,7 @@ const postgresql = new k8s.helm.v3.Release("postgresql", {
 // REDIS CACHE
 // ============================================
 // Deploy Redis for caching and session storage
+// NodePort 30379 enabled for external access
 
 // Read password from environment (set by GitHub Actions)
 const redisPassword = process.env.REDIS_PASSWORD;
