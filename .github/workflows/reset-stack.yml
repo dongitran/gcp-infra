@@ -1,0 +1,74 @@
+name: Reset Pulumi Stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "yes" to confirm stack deletion'
+        required: true
+        default: ''
+
+env:
+  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+  PULUMI_CONFIG_PASSPHRASE: ""
+
+jobs:
+  reset-stack:
+    name: Force Remove Pulumi Stack
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate confirmation
+        if: github.event.inputs.confirm != 'yes'
+        run: |
+          echo "❌ Confirmation required. Please type 'yes' to confirm stack deletion."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Pulumi CLI
+        uses: pulumi/actions@v6
+        with:
+          command: preview
+          stack-name: dongitran/gcp-infra/dev
+          expect-no-changes: true
+        continue-on-error: true
+
+      - name: Force remove stack
+        run: |
+          pulumi login
+          echo "🗑️ Force removing stack dongitran/gcp-infra/dev..."
+          pulumi stack rm dongitran/gcp-infra/dev --force --yes
+          echo "✅ Stack removed successfully!"
+
+      - name: Notify Telegram
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            EMOJI="🗑️"
+            STATUS="Stack reset completed"
+          else
+            EMOJI="❌"
+            STATUS="Stack reset failed"
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg chat "${{ secrets.TELEGRAM_CHAT_ID }}" \
+              --arg actor "${{ github.actor }}" \
+              --arg status "$EMOJI $STATUS" \
+              --arg url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              '{
+                chat_id: $chat,
+                parse_mode: "Markdown",
+                disable_web_page_preview: true,
+                text: "\($status)\n👤 \($actor)\n🔗 [View run](\($url))"
+              }')"
