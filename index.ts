@@ -220,12 +220,8 @@ if (!postgresPassword) {
 // Bitnami is actively deprecating old debian-12 tags during Photon Linux migration
 const postgresql = new k8s.helm.v3.Release("postgresql", {
     name: "postgresql",
-    chart: "postgresql",
-    // No version specified - uses latest stable chart from Bitnami repo
+    chart: "oci://registry-1.docker.io/bitnamicharts/postgresql",
     namespace: dbNamespace.metadata.name,
-    repositoryOpts: {
-        repo: "https://charts.bitnami.com/bitnami",
-    },
     values: {
         // Single master configuration (no replicas)
         architecture: "standalone",
@@ -278,12 +274,8 @@ if (!redisPassword) {
 // Deploy Redis using Bitnami Helm chart (standalone, NodePort)
 const redis = new k8s.helm.v3.Release("redis", {
     name: "redis",
-    chart: "redis",
-    // No version specified - uses latest stable chart
+    chart: "oci://registry-1.docker.io/bitnamicharts/redis",
     namespace: dbNamespace.metadata.name,
-    repositoryOpts: {
-        repo: "https://charts.bitnami.com/bitnami",
-    },
     values: {
         // Standalone architecture (no replication)
         architecture: "standalone",
@@ -334,12 +326,8 @@ if (!mongodbPassword) {
 // Deploy MongoDB using Bitnami Helm chart (standalone, NodePort)
 const mongodb = new k8s.helm.v3.Release("mongodb", {
     name: "mongodb",
-    chart: "mongodb",
-    // No version specified - uses latest stable chart
+    chart: "oci://registry-1.docker.io/bitnamicharts/mongodb",
     namespace: dbNamespace.metadata.name,
-    repositoryOpts: {
-        repo: "https://charts.bitnami.com/bitnami",
-    },
     values: {
         // Standalone architecture (no replica set)
         architecture: "standalone",
