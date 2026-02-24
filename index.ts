@@ -32,12 +32,12 @@ const databaseFirewall = new gcp.compute.Firewall("allow-database-nodeports", {
     allows: [
         {
             protocol: "tcp",
-            ports: ["30432", "30379", "30017"],  // PostgreSQL, Redis, MongoDB
+            ports: ["30432"],  // PostgreSQL only (Redis/MongoDB use ClusterIP)
         },
     ],
     sourceRanges: ["0.0.0.0/0"], // Allow from anywhere (restrict in production)
     targetTags: [], // Apply to all instances in the network
-    description: "Allow external access to database NodePorts: PostgreSQL:30432, Redis:30379, MongoDB:30017",
+    description: "Allow external access to database NodePorts: PostgreSQL:30432",
 });
 
 // GKE Cluster
@@ -215,130 +215,18 @@ if (!postgresPassword) {
     throw new Error("POSTGRES_PASSWORD environment variable is required");
 }
 
-// Deploy PostgreSQL using Bitnami Helm chart (single master, NodePort)
-// Using latest chart version (no version specified) to ensure working default image tags
-// Bitnami is actively deprecating old debian-12 tags during Photon Linux migration
+// Deploy PostgreSQL using CloudPirates Helm chart (standalone, NodePort)
+// Migrated from Bitnami (discontinued by Broadcom Aug 2025) to CloudPirates (open-source)
+// Uses official Docker postgres image instead of Bitnami custom image
 const postgresql = new k8s.helm.v3.Release("postgresql", {
     name: "postgresql",
-    chart: "oci://registry-1.docker.io/bitnamicharts/postgresql",
+    chart: "oci://registry-1.docker.io/cloudpirates/postgres",
     namespace: dbNamespace.metadata.name,
     values: {
-        // Single master configuration (no replicas)
-        architecture: "standalone",
-
         auth: {
             database: "app",
             username: "postgres",
             password: postgresPassword,
-        },
-
-        primary: {
-            resources: {
-                requests: {
-                    cpu: "500m",
-                    memory: "512Mi",
-                },
-                limits: {
-                    cpu: "1000m",
-                    memory: "1Gi",
-                },
-            },
-            persistence: {
-                enabled: true,
-                size: "4Gi",
-                storageClass: "standard-rwo",
-            },
-            service: {
-                type: "NodePort",  // Use NodePort instead of ClusterIP
-                nodePorts: {
-                    postgresql: 30432,  // Fixed NodePort for PostgreSQL
-                },
-            },
-        },
-    },
-}, { provider: k8sProvider, dependsOn: [dbNamespace] });
-
-// ============================================
-// REDIS CACHE
-// ============================================
-// Deploy Redis for caching and session storage
-// NodePort 30379 enabled for external access
-
-// Read password from environment (set by GitHub Actions)
-const redisPassword = process.env.REDIS_PASSWORD;
-
-if (!redisPassword) {
-    throw new Error("REDIS_PASSWORD environment variable is required");
-}
-
-// Deploy Redis using Bitnami Helm chart (standalone, NodePort)
-const redis = new k8s.helm.v3.Release("redis", {
-    name: "redis",
-    chart: "oci://registry-1.docker.io/bitnamicharts/redis",
-    namespace: dbNamespace.metadata.name,
-    values: {
-        // Standalone architecture (no replication)
-        architecture: "standalone",
-
-        auth: {
-            enabled: true,
-            password: redisPassword,
-        },
-
-        master: {
-            resources: {
-                requests: {
-                    cpu: "250m",
-                    memory: "256Mi",
-                },
-                limits: {
-                    cpu: "500m",
-                    memory: "512Mi",
-                },
-            },
-            persistence: {
-                enabled: true,
-                size: "2Gi",
-                storageClass: "standard-rwo",
-            },
-            service: {
-                type: "NodePort",
-                nodePorts: {
-                    redis: "30379",  // Fixed NodePort for Redis (must be string)
-                },
-            },
-        },
-    },
-}, { provider: k8sProvider, dependsOn: [dbNamespace] });
-
-// ============================================
-// MONGODB DATABASE
-// ============================================
-// Deploy MongoDB for document storage
-
-// Read password from environment (set by GitHub Actions)
-const mongodbPassword = process.env.MONGODB_PASSWORD;
-
-if (!mongodbPassword) {
-    throw new Error("MONGODB_PASSWORD environment variable is required");
-}
-
-// Deploy MongoDB using Bitnami Helm chart (standalone, NodePort)
-const mongodb = new k8s.helm.v3.Release("mongodb", {
-    name: "mongodb",
-    chart: "oci://registry-1.docker.io/bitnamicharts/mongodb",
-    namespace: dbNamespace.metadata.name,
-    values: {
-        // Standalone architecture (no replica set)
-        architecture: "standalone",
-
-        auth: {
-            enabled: true,
-            rootPassword: mongodbPassword,
-            // Create default database
-            databases: ["app"],
-            usernames: ["appuser"],
-            passwords: [mongodbPassword],
         },
 
         resources: {
@@ -360,9 +248,106 @@ const mongodb = new k8s.helm.v3.Release("mongodb", {
 
         service: {
             type: "NodePort",
-            nodePorts: {
-                mongodb: "30017",  // Fixed NodePort for MongoDB (must be string)
+            nodePort: 30432,  // Fixed NodePort for PostgreSQL
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
+// ============================================
+// REDIS CACHE
+// ============================================
+// Deploy Redis for caching and session storage
+// ClusterIP only — access externally via kubectl port-forward
+
+// Read password from environment (set by GitHub Actions)
+const redisPassword = process.env.REDIS_PASSWORD;
+
+if (!redisPassword) {
+    throw new Error("REDIS_PASSWORD environment variable is required");
+}
+
+// Deploy Redis using CloudPirates Helm chart (standalone, ClusterIP)
+// Migrated from Bitnami (discontinued by Broadcom Aug 2025) to CloudPirates
+const redis = new k8s.helm.v3.Release("redis", {
+    name: "redis",
+    chart: "oci://registry-1.docker.io/cloudpirates/redis",
+    namespace: dbNamespace.metadata.name,
+    values: {
+        architecture: "standalone",
+
+        auth: {
+            enabled: true,
+            password: redisPassword,
+        },
+
+        resources: {
+            requests: {
+                cpu: "250m",
+                memory: "256Mi",
             },
+            limits: {
+                cpu: "500m",
+                memory: "512Mi",
+            },
+        },
+
+        persistence: {
+            enabled: true,
+            size: "2Gi",
+            storageClass: "standard-rwo",
+        },
+
+        service: {
+            type: "ClusterIP",
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
+// ============================================
+// MONGODB DATABASE
+// ============================================
+// Deploy MongoDB for document storage
+// ClusterIP only — access externally via kubectl port-forward
+
+// Read password from environment (set by GitHub Actions)
+const mongodbPassword = process.env.MONGODB_PASSWORD;
+
+if (!mongodbPassword) {
+    throw new Error("MONGODB_PASSWORD environment variable is required");
+}
+
+// Deploy MongoDB using CloudPirates Helm chart (standalone, ClusterIP)
+// Migrated from Bitnami (discontinued by Broadcom Aug 2025) to CloudPirates
+// Uses root auth only — create app users manually if needed
+const mongodb = new k8s.helm.v3.Release("mongodb", {
+    name: "mongodb",
+    chart: "oci://registry-1.docker.io/cloudpirates/mongodb",
+    namespace: dbNamespace.metadata.name,
+    values: {
+        auth: {
+            enabled: true,
+            rootPassword: mongodbPassword,
+        },
+
+        resources: {
+            requests: {
+                cpu: "500m",
+                memory: "512Mi",
+            },
+            limits: {
+                cpu: "1000m",
+                memory: "1Gi",
+            },
+        },
+
+        persistence: {
+            enabled: true,
+            size: "4Gi",
+            storageClass: "standard-rwo",
+        },
+
+        service: {
+            type: "ClusterIP",
         },
     },
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });

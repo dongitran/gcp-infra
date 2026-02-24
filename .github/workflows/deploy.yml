@@ -89,7 +89,7 @@ jobs:
                 chat_id: $chat,
                 parse_mode: "Markdown",
                 disable_web_page_preview: true,
-                text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🖥️ Nodes: `\($nodes)`\n🗄️ **Databases:**\n  • PostgreSQL: `:30432`\n  • Redis: `:30379`\n  • MongoDB: `:30017`\n🔗 [View run](\($url))"
+                text: "✅ *GCP Infra deployed*\n📦 `\($sha)` — \($msg)\n👤 \($actor)\n🌐 Ingress: `\($ingress)`\n☸️ Cluster: `\($cluster)`\n🖥️ Nodes: `\($nodes)`\n🗄️ **Databases:**\n  • PostgreSQL: `:30432` (NodePort)\n  • Redis: ClusterIP (internal)\n  • MongoDB: ClusterIP (internal)\n🔗 [View run](\($url))"
               }')"
 
       # Note: Kubeconfig available via Pulumi Stack Output: kubeconfigOutput
