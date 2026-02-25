@@ -1,6 +1,7 @@
 name: Deploy GKE Infrastructure
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
