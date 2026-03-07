@@ -351,10 +351,33 @@ const mongodb = new k8s.helm.v3.Release("mongodb", {
             nodePort: 30017,  // Fixed NodePort for MongoDB
         },
     },
-    // Force Helm upgrade to recreate deleted service with correct NodePort
-    // Remove this after successful deploy
-    forceUpdate: true,
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });
+
+// Manage MongoDB service separately with deleteBeforeReplace
+// to ensure fixed nodePort 30017 is always applied correctly
+const mongodbService = new k8s.core.v1.Service("mongodb-service", {
+    metadata: {
+        name: "mongodb",
+        namespace: dbNamespace.metadata.name,
+        labels: {
+            "app.kubernetes.io/instance": "mongodb",
+            "app.kubernetes.io/name": "mongodb",
+        },
+    },
+    spec: {
+        type: "NodePort",
+        ports: [{
+            port: 27017,
+            targetPort: 27017 as any,
+            nodePort: 30017,
+            protocol: "TCP",
+        }],
+        selector: {
+            "app.kubernetes.io/instance": "mongodb",
+            "app.kubernetes.io/name": "mongodb",
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [mongodb], deleteBeforeReplace: true });
 
 
 
