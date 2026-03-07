@@ -99,7 +99,7 @@ echo "Node IP 2: $NODE_IP_2"
 
 ### Phase 5: Save URIs to Bitwarden (upsert)
 
-7. Với mỗi URI key: search theo tên trong folder `Google Cloud Platform`.
+7. Với mỗi URI key: tìm kiếm trong Bitwarden theo tên trong folder `Google Cloud Platform`.
    - Nếu **tồn tại**: update `notes`
    - Nếu **chưa có**: tạo mới Secure Note trong folder, `notes` = URI
 
@@ -109,7 +109,7 @@ echo "Node IP 2: $NODE_IP_2"
 
 ### Phase 6: Verify
 
-8. Dùng MCP Bitwarden list tất cả items trong folder `Google Cloud Platform`, search `GCP_INFRA`,
+8. Tìm kiếm trong Bitwarden tất cả items trong folder `Google Cloud Platform` với từ khoá `GCP_INFRA`,
    xác nhận 6 keys có giá trị đúng.
 
 ---
