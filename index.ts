@@ -32,12 +32,12 @@ const databaseFirewall = new gcp.compute.Firewall("allow-database-nodeports", {
     allows: [
         {
             protocol: "tcp",
-            ports: ["30432"],  // PostgreSQL only (Redis/MongoDB use ClusterIP)
+            ports: ["30432", "30017"],  // PostgreSQL:30432, MongoDB:30017
         },
     ],
     sourceRanges: ["0.0.0.0/0"], // Allow from anywhere (restrict in production)
     targetTags: [], // Apply to all instances in the network
-    description: "Allow external access to database NodePorts: PostgreSQL:30432",
+    description: "Allow external access to database NodePorts: PostgreSQL:30432, MongoDB:30017",
 });
 
 // GKE Cluster
@@ -347,7 +347,8 @@ const mongodb = new k8s.helm.v3.Release("mongodb", {
         },
 
         service: {
-            type: "ClusterIP",
+            type: "NodePort",
+            nodePort: 30017,  // Fixed NodePort for MongoDB
         },
     },
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });

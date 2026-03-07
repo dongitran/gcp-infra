@@ -9,7 +9,7 @@ Pulumi IaC project provisioning GKE cluster on GCP.
 | **GKE Cluster** | Zonal, 2x e2-standard-2 nodes (8 vCPU), 50GB SSD |
 | **VPC** | Custom, 10.0.0.0/24, secondary ranges for pods/services |
 | **Ingress** | NGINX Controller v4.12.0, LoadBalancer (34.177.107.211) |
-| **Databases** | PostgreSQL 18.2 (:30432), Redis 8.6 (:30379), MongoDB (:30017) |
+| **Databases** | PostgreSQL 18.2 (:30432), Redis 8.6 (:30379), MongoDB (:30017 NodePort) |
 | **Location** | asia-southeast1-a |
 
 ## Project Structure
@@ -81,12 +81,11 @@ Password: $REDIS_PASSWORD (GitHub Secret)
 # Internal (within cluster)
 mongodb.databases.svc.cluster.local:27017
 
-# External (via NodePort - firewall managed by Pulumi)
+# External (via NodePort - firewall port 30017 managed by Pulumi)
 <NODE_EXTERNAL_IP>:30017
 
 # Credentials
-User: appuser (or root)
-Database: app
+User: root
 Password: $MONGODB_PASSWORD (GitHub Secret)
 ```
 
