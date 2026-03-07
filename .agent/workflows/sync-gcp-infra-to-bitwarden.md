@@ -73,8 +73,9 @@ echo "Node IP 2: $NODE_IP_2"
 
    - **MongoDB URI** (NodePort):
      ```
-     mongodb://root:<MONGODB_PASSWORD>@<NODE_IP_1>:30017
+     mongodb://admin:<MONGODB_PASSWORD>@<NODE_IP_1>:30017/?authSource=admin
      ```
+     > Username là `admin` (CloudPirates chart default: `MONGO_INITDB_ROOT_USERNAME=admin`)
 
    - **PostgreSQL URI** (NodePort):
      ```
