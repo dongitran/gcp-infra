@@ -198,6 +198,64 @@ const nginxIngress = new k8s.helm.v3.Release("ingress-nginx", {
 }, { provider: k8sProvider, dependsOn: [nodePool] });
 
 // ============================================
+// CERT-MANAGER — TLS certificate automation via Let's Encrypt
+// ============================================
+// cert-manager watches Ingress resources with annotation:
+//   cert-manager.io/cluster-issuer: letsencrypt-prod
+// and auto-provisions Let's Encrypt certificates via HTTP-01 challenge.
+//
+// Version: v1.17.1 (stable as of 2025-2026)
+// - v1.18 has breaking change: HTTP01 uses PathType=Exact (incompatible with some nginx configs)
+// - v1.19.0 had a bug causing unnecessary certificate re-issuances (fixed in v1.19.1)
+// - crds.enabled: true replaces deprecated installCRDs (deprecated since v1.15)
+// - crds.keep: true (default) — CRDs survive helm uninstall
+
+const certManagerNs = new k8s.core.v1.Namespace("cert-manager-namespace", {
+    metadata: { name: "cert-manager" },
+}, { provider: k8sProvider, dependsOn: [nodePool] });
+
+const certManager = new k8s.helm.v3.Release("cert-manager", {
+    name: "cert-manager",
+    chart: "cert-manager",
+    version: "1.17.1",
+    namespace: certManagerNs.metadata.name,
+    repositoryOpts: {
+        repo: "https://charts.jetstack.io",
+    },
+    values: {
+        crds: {
+            enabled: true,  // Install CRDs as part of Helm release (replaces deprecated installCRDs)
+            keep: true,     // Keep CRDs if helm release is uninstalled (protect cert resources)
+        },
+        resources: {
+            requests: { cpu: "50m", memory: "64Mi" },
+            limits: { cpu: "200m", memory: "256Mi" },
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [nodePool, nginxIngress] });
+
+// ClusterIssuer — Let's Encrypt production
+// Uses HTTP-01 challenge via ingress-nginx (already deployed above)
+// Scope: cluster-wide — shared by all namespaces/apps on this cluster
+const letsEncryptIssuer = new k8s.apiextensions.CustomResource("letsencrypt-prod", {
+    apiVersion: "cert-manager.io/v1",
+    kind: "ClusterIssuer",
+    metadata: { name: "letsencrypt-prod" },
+    spec: {
+        acme: {
+            server: "https://acme-v02.api.letsencrypt.org/directory",
+            email: "thiendong.iuh@gmail.com",
+            privateKeySecretRef: { name: "letsencrypt-prod-key" },
+            solvers: [{
+                http01: {
+                    ingress: { ingressClassName: "nginx" },
+                },
+            }],
+        },
+    },
+}, { provider: k8sProvider, dependsOn: [certManager] });
+
+// ============================================
 // POSTGRESQL DATABASE
 // ============================================
 // Deployed after cluster upgrade to e2-standard-2 (8 vCPU total, ~7600m allocatable)
