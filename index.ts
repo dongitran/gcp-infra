@@ -306,8 +306,8 @@ const redis = new k8s.helm.v3.Release("redis", {
 // ============================================
 // MONGODB DATABASE
 // ============================================
-// Deploy MongoDB for document storage
-// ClusterIP only — access externally via kubectl port-forward
+// Deploy MongoDB for document storage (NodePort 30017)
+// Root username: admin (CloudPirates chart default: MONGO_INITDB_ROOT_USERNAME=admin)
 
 // Read password from environment (set by GitHub Actions)
 const mongodbPassword = process.env.MONGODB_PASSWORD;
@@ -316,9 +316,10 @@ if (!mongodbPassword) {
     throw new Error("MONGODB_PASSWORD environment variable is required");
 }
 
-// Deploy MongoDB using CloudPirates Helm chart (standalone, ClusterIP)
+// Deploy MongoDB using CloudPirates Helm chart (standalone)
 // Migrated from Bitnami (discontinued by Broadcom Aug 2025) to CloudPirates
-// Uses root auth only — create app users manually if needed
+// service.enabled=false: Pulumi manages the service separately (mongodbService below)
+// to guarantee a fixed NodePort 30017 without SSA field ownership conflicts
 const mongodb = new k8s.helm.v3.Release("mongodb", {
     name: "mongodb",
     chart: "oci://registry-1.docker.io/cloudpirates/mongodb",
@@ -346,15 +347,15 @@ const mongodb = new k8s.helm.v3.Release("mongodb", {
             storageClass: "standard-rwo",
         },
 
+        // Disable Helm-managed service — Pulumi creates it below with fixed NodePort
         service: {
-            type: "NodePort",
-            nodePort: 30017,  // Fixed NodePort for MongoDB
+            enabled: false,
         },
     },
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });
 
-// Manage MongoDB service separately with deleteBeforeReplace
-// to ensure fixed nodePort 30017 is always applied correctly
+// Pulumi owns the MongoDB service exclusively (Helm service is disabled above)
+// deleteBeforeReplace ensures nodePort changes are applied cleanly
 const mongodbService = new k8s.core.v1.Service("mongodb-service", {
     metadata: {
         name: "mongodb",
@@ -362,10 +363,6 @@ const mongodbService = new k8s.core.v1.Service("mongodb-service", {
         labels: {
             "app.kubernetes.io/instance": "mongodb",
             "app.kubernetes.io/name": "mongodb",
-        },
-        annotations: {
-            // Force Pulumi to take SSA ownership from Helm field manager
-            "pulumi.com/patchForce": "true",
         },
     },
     spec: {
