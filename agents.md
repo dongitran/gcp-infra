@@ -85,8 +85,12 @@ mongodb.databases.svc.cluster.local:27017
 <NODE_EXTERNAL_IP>:30017
 
 # Credentials
-User: root
+User: admin   ← CloudPirates chart default (MONGO_INITDB_ROOT_USERNAME=admin)
 Password: $MONGODB_PASSWORD (GitHub Secret)
+AuthSource: admin
+
+# Connection string
+mongodb://admin:<MONGODB_PASSWORD>@<NODE_EXTERNAL_IP>:30017/?authSource=admin
 ```
 
 > **⚠️ Note:** When deploying new services, update Telegram notifications in [deploy.yml](file:///Users/dongtran/augment/gcp-infra/.github/workflows/deploy.yml#L66-L88) with service info.
