@@ -363,6 +363,10 @@ const mongodbService = new k8s.core.v1.Service("mongodb-service", {
             "app.kubernetes.io/instance": "mongodb",
             "app.kubernetes.io/name": "mongodb",
         },
+        annotations: {
+            // Force Pulumi to take SSA ownership from Helm field manager
+            "pulumi.com/patchForce": "true",
+        },
     },
     spec: {
         type: "NodePort",
