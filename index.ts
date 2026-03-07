@@ -351,6 +351,9 @@ const mongodb = new k8s.helm.v3.Release("mongodb", {
             nodePort: 30017,  // Fixed NodePort for MongoDB
         },
     },
+    // Force Helm upgrade to recreate deleted service with correct NodePort
+    // Remove this after successful deploy
+    forceUpdate: true,
 }, { provider: k8sProvider, dependsOn: [dbNamespace] });
 
 
