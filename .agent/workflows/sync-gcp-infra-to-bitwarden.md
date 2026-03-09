@@ -84,7 +84,7 @@ echo "Node IP 2: $NODE_IP_2"
 
    - **Redis URI** (ClusterIP — internal cluster only):
      ```
-     redis://:<REDIS_PASSWORD>@redis-master.databases.svc.cluster.local:6379
+     redis://:<REDIS_PASSWORD>@redis.databases.svc.cluster.local:6379
      ```
 
 ---
